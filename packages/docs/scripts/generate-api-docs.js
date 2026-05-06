@@ -11,7 +11,7 @@
  *
  * Options:
  *   --url <url>     Fetch OpenAPI spec from URL (default: uses local file)
- *   --file <path>   Read OpenAPI spec from local file (default: api-reference/openapi.json)
+ *   --file <path>   Read OpenAPI spec from local file (default: ../creem-sdk/openapi.json)
  *   --dry-run       Preview changes without writing files
  *   --update-spec   Update the local openapi.json from the remote URL
  */
@@ -54,7 +54,9 @@ function parseArgs() {
   const args = process.argv.slice(2);
   const options = {
     url: null,
-    file: "api-reference/openapi.json",
+    // Default to the workspace-shared spec in creem-sdk (single source of truth
+    // — the SDK generator reads the same file). `--file` overrides this.
+    file: "../creem-sdk/openapi.json",
     dryRun: false,
     updateSpec: false,
     cleanup: false,
@@ -86,7 +88,7 @@ Usage:
 
 Options:
   --url <url>      Fetch OpenAPI spec from URL
-  --file <path>    Read OpenAPI spec from local file (default: api-reference/openapi.json)
+  --file <path>    Read OpenAPI spec from local file (default: ../creem-sdk/openapi.json)
   --dry-run        Preview changes without writing files
   --update-spec    Update the local openapi.json from the remote URL
   --cleanup        Delete orphaned MDX files (endpoints removed from spec)

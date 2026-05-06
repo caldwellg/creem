@@ -56,7 +56,7 @@ node scripts/generate-api-docs.js --url https://your-api.com/open-api/json --dry
 | Option          | Description                                                               |
 | --------------- | ------------------------------------------------------------------------- |
 | `--url <url>`   | Fetch OpenAPI spec from a remote URL                                      |
-| `--file <path>` | Read OpenAPI spec from local file (default: `api-reference/openapi.json`) |
+| `--file <path>` | Read OpenAPI spec from local file (default: `../creem-sdk/openapi.json`)  |
 | `--update-spec` | Update the local `openapi.json` from the remote URL                       |
 | `--dry-run`     | Preview changes without writing files                                     |
 | `--cleanup`     | Delete orphaned MDX files (endpoints removed from spec)                   |

@@ -12,10 +12,10 @@ creem-docs/
 ├── llms.txt                      # LLM-friendly summary of Creem
 ├── getting-started/              # Onboarding: intro, quickstart, test mode, migration
 ├── api-reference/                # API docs (auto-generated from OpenAPI spec)
-│   ├── openapi.json              # OpenAPI 3.0 spec (source of truth for API Reference tab)
 │   ├── introduction.mdx          # API introduction page
 │   ├── error-codes.mdx           # Error code reference
 │   └── endpoint/                 # Auto-generated endpoint MDX files
+│   # OpenAPI spec lives at ../creem-sdk/openapi.json (workspace-shared).
 ├── features/                     # Product feature docs (checkout, subscriptions, splits, etc.)
 ├── guides/                       # Step-by-step tutorials
 ├── code/                         # Developer tools (SDKs, CLI, webhooks, community)
@@ -124,7 +124,7 @@ icon: 'icon-name'  # Optional — Font Awesome icon name
 
 ### Source of Truth
 
-The OpenAPI 3.0 spec lives at `api-reference/openapi.json`. This is the single source of truth for all API endpoint documentation.
+The OpenAPI 3.0 spec lives at `../creem-sdk/openapi.json` (workspace-shared with the SDK generator). This is the single source of truth for all API endpoint documentation; the docs script reads it on every regen.
 
 ### How API Docs Are Generated
 

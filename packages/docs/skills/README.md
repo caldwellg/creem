@@ -105,7 +105,7 @@ Most AI coding assistants support adding custom context. You can:
 
 1. Clone this repository into your project
 2. Add the files to your AI tool's context or knowledge base
-3. Reference the OpenAPI specification (`api-reference/openapi.json`) for structured API information
+3. Reference the OpenAPI specification (`../creem-sdk/openapi.json`) for structured API information
 
 ## Skill Structure
 
