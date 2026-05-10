@@ -6,3 +6,11 @@ node_modules/
 .cache
 dist
 build
+
+# Internal dev/agent files — kept out of the published docs tree so they
+# don't leak into docs.creem.io/llms-full.txt. Mintlify auto-indexes every
+# .md / .mdx under packages/docs/ regardless of docs.json navigation, so
+# anything here that isn't customer-facing must stay ignored.
+CLAUDE.md
+README.md
+skills/
