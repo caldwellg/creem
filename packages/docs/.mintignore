@@ -1,0 +1,17 @@
+# Files Mintlify must NOT publish or index.
+#
+# Mintlify auto-indexes every .md/.mdx under packages/docs/ into the public
+# site (and into https://docs.creem.io/llms-full.txt) regardless of docs.json
+# navigation. Anything listed here is removed from the published site,
+# unreachable by URL, and excluded from search/LLM indexing — but stays in
+# the repo so contributors and the Creem API skill plugin can use the files
+# locally.
+#
+# Syntax matches .gitignore.
+
+# Repo-level README that explains how to develop the docs package.
+README.md
+
+# Creem API Claude Code skill plugin source. Used by agents that install the
+# plugin from this repo; not customer-facing documentation.
+skills/
