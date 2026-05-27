@@ -12,7 +12,10 @@
             "required": true,
             "in": "query",
             "description": "The unique identifier of the product.",
-            "schema": { "example": "prod_1234567890", "type": "string" }
+            "schema": {
+              "example": "prod_1234567890",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -20,16 +23,35 @@
             "description": "Successfully retrieved the product",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProductEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProductEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Products"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.products.get(\"prod_1234567890\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       },
       "post": {
         "operationId": "createProduct",
@@ -52,16 +74,35 @@
             "description": "Successfully created a product",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProductEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProductEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Products"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.products.create({\n    name: \"<value>\",\n    description: \"at through very dishearten knife ashamed baa beret amongst\",\n    imageUrl: \"https://picsum.photos/200/300\",\n    price: 400,\n    currency: \"USD\",\n    billingType: \"recurring\",\n    defaultSuccessUrl: \"https://example.com/?status=successful\",\n    customFields: [\n      {\n        type: \"checkbox\",\n        key: \"companyName\",\n        label: \"Company Name\",\n        text: {\n          maxLength: 200,\n          minLength: 1,\n        },\n        checkbox: {\n          label: \"I agree to the [terms and conditions](https://example.com/terms)\",\n        },\n      },\n    ],\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/products/search": {
@@ -75,14 +116,22 @@
             "required": false,
             "in": "query",
             "description": "The page number for pagination.",
-            "schema": { "default": 1, "example": 1, "type": "number" }
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
           },
           {
             "name": "page_size",
             "required": false,
             "in": "query",
             "description": "The number of items per page.",
-            "schema": { "default": 10, "example": 10, "type": "number" }
+            "schema": {
+              "default": 10,
+              "example": 10,
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -90,16 +139,35 @@
             "description": "Successfully retrieved products",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/ProductListEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/ProductListEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Products"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.products.search();\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/customers/list": {
@@ -113,14 +181,22 @@
             "required": false,
             "in": "query",
             "description": "The page number for pagination.",
-            "schema": { "default": 1, "example": 1, "type": "number" }
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
           },
           {
             "name": "page_size",
             "required": false,
             "in": "query",
             "description": "The number of items per page.",
-            "schema": { "default": 50, "example": 50, "type": "number" }
+            "schema": {
+              "default": 50,
+              "example": 50,
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -128,16 +204,35 @@
             "description": "Successfully retrieved customers",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CustomerListEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerListEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Customers"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customers.list();\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/customers/{id}/orders": {
@@ -151,21 +246,31 @@
             "required": true,
             "in": "path",
             "description": "The unique identifier of the customer",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "page_number",
             "required": false,
             "in": "query",
             "description": "The page number for pagination.",
-            "schema": { "default": 1, "example": 1, "type": "number" }
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
           },
           {
             "name": "page_size",
             "required": false,
             "in": "query",
             "description": "The number of items per page.",
-            "schema": { "default": 10, "example": 10, "type": "number" }
+            "schema": {
+              "default": 10,
+              "example": 10,
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -173,16 +278,35 @@
             "description": "Successfully retrieved customer orders",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/OrderListEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/OrderListEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Customers"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customers.getOrders(\"<id>\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/customers/{id}/subscriptions": {
@@ -196,21 +320,31 @@
             "required": true,
             "in": "path",
             "description": "The unique identifier of the customer",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "page_number",
             "required": false,
             "in": "query",
             "description": "The page number for pagination.",
-            "schema": { "default": 1, "example": 1, "type": "number" }
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
           },
           {
             "name": "page_size",
             "required": false,
             "in": "query",
             "description": "The number of items per page.",
-            "schema": { "default": 10, "example": 10, "type": "number" }
+            "schema": {
+              "default": 10,
+              "example": 10,
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -224,12 +358,29 @@
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Customers"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customers.listSubscriptions(\"<id>\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/customers/{id}/licenses": {
@@ -243,21 +394,31 @@
             "required": true,
             "in": "path",
             "description": "The unique identifier of the customer",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "page_number",
             "required": false,
             "in": "query",
             "description": "The page number for pagination.",
-            "schema": { "default": 1, "example": 1, "type": "number" }
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
           },
           {
             "name": "page_size",
             "required": false,
             "in": "query",
             "description": "The number of items per page.",
-            "schema": { "default": 10, "example": 10, "type": "number" }
+            "schema": {
+              "default": 10,
+              "example": 10,
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -265,16 +426,35 @@
             "description": "Successfully retrieved customer licenses",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/LicenseListEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/LicenseListEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Customers"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customers.listLicenses(\"<id>\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/customers": {
@@ -288,14 +468,20 @@
             "required": false,
             "in": "query",
             "description": "The unique identifier of the customer.",
-            "schema": { "example": "cust_1234567890", "type": "string" }
+            "schema": {
+              "example": "cust_1234567890",
+              "type": "string"
+            }
           },
           {
             "name": "email",
             "required": false,
             "in": "query",
             "description": "The email address of the customer.",
-            "schema": { "example": "customer@example.com", "type": "string" }
+            "schema": {
+              "example": "customer@example.com",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -303,16 +489,35 @@
             "description": "Successfully retrieved the customer",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CustomerEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Customers"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customers.retrieve(\"cust_1234567890\", \"customer@example.com\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       },
       "post": {
         "operationId": "createCustomer",
@@ -335,16 +540,35 @@
             "description": "Successfully created the customer",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CustomerEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Customers"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customers.create({\n    email: \"john@example.com\",\n    name: \"John Doe\",\n    metadata: {},\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       },
       "patch": {
         "operationId": "updateCustomer",
@@ -366,16 +590,35 @@
             "description": "Successfully updated the customer",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CustomerEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Customers"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customers.update({\n    customerId: \"cust_abc123\",\n    name: \"John Doe\",\n    metadata: {},\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/customers/billing": {
@@ -400,16 +643,35 @@
             "description": "Successfully generated customer links",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CustomerLinksEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerLinksEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Customers"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customers.generateBillingLinks({\n    customerId: \"<id>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/subscriptions": {
@@ -423,7 +685,10 @@
             "required": true,
             "in": "query",
             "description": "The unique identifier of the subscription",
-            "schema": { "example": "sub_1234567890", "type": "string" }
+            "schema": {
+              "example": "sub_1234567890",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -431,16 +696,35 @@
             "description": "Successfully retrieved the subscription",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/SubscriptionEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Subscriptions"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.subscriptions.get(\"sub_1234567890\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/subscriptions/search": {
@@ -454,14 +738,22 @@
             "required": false,
             "in": "query",
             "description": "The page number for pagination.",
-            "schema": { "default": 1, "example": 1, "type": "number" }
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
           },
           {
             "name": "page_size",
             "required": false,
             "in": "query",
             "description": "The number of items per page.",
-            "schema": { "default": 10, "example": 10, "type": "number" }
+            "schema": {
+              "default": 10,
+              "example": 10,
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -475,12 +767,29 @@
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Subscriptions"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.subscriptions.search();\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/subscriptions/{id}/cancel": {
@@ -494,7 +803,9 @@
             "required": true,
             "in": "path",
             "description": "The unique identifier of the subscription",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -513,16 +824,35 @@
             "description": "Successfully canceled a subscription",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/SubscriptionEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Subscriptions"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.subscriptions.cancel(\"<id>\", {\n    mode: \"immediate\",\n    onExecute: \"cancel\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/subscriptions/{id}": {
@@ -536,7 +866,9 @@
             "required": true,
             "in": "path",
             "description": "The unique identifier of the subscription",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -555,16 +887,35 @@
             "description": "Successfully updated a subscription",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/SubscriptionEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Subscriptions"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.subscriptions.update(\"sub_1234567890\", {\n    items: [\n      {\n        id: \"sitem_1234567890\",\n        priceId: \"pprice_1234567890\",\n        units: 15,\n      },\n    ],\n    updateBehavior: \"proration-charge-immediately\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/subscriptions/{id}/upgrade": {
@@ -578,7 +929,9 @@
             "required": true,
             "in": "path",
             "description": "The unique identifier of the subscription",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -597,16 +950,35 @@
             "description": "Successfully upgraded the subscription",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/SubscriptionEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Subscriptions"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.subscriptions.upgrade(\"<id>\", {\n    productId: \"prod_123\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/subscriptions/{id}/pause": {
@@ -620,7 +992,9 @@
             "required": true,
             "in": "path",
             "description": "The unique identifier of the subscription",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -628,16 +1002,35 @@
             "description": "Successfully paused a subscription",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/SubscriptionEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Subscriptions"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.subscriptions.pause(\"<id>\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/subscriptions/{id}/resume": {
@@ -651,7 +1044,9 @@
             "required": true,
             "in": "path",
             "description": "The unique identifier of the subscription",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -659,16 +1054,35 @@
             "description": "Successfully resumed a subscription",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/SubscriptionEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Subscriptions"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.subscriptions.resume(\"<id>\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/checkouts": {
@@ -682,7 +1096,10 @@
             "required": true,
             "in": "query",
             "description": "The ID of the checkout session to retrieve.",
-            "schema": { "example": "chk_1234567890", "type": "string" }
+            "schema": {
+              "example": "chk_1234567890",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -690,16 +1107,35 @@
             "description": "Successfully retrieved the checkout session",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CheckoutEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Checkouts"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.checkouts.retrieve(\"chk_1234567890\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       },
       "post": {
         "operationId": "createCheckout",
@@ -711,7 +1147,9 @@
           "description": "Create checkout request payload",
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateCheckoutRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/CreateCheckoutRequest"
+              }
             }
           }
         },
@@ -720,16 +1158,35 @@
             "description": "Successfully created a checkout session",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CheckoutEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Checkouts"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.checkouts.create({\n    productId: \"prod_1234567890\",\n    units: 1,\n    discountCode: \"SUMMER2024\",\n    customer: {\n      id: \"cust_1234567890\",\n      email: \"user@example.com\",\n    },\n    customFields: [\n      {\n        type: \"text\",\n        key: \"companyName\",\n        label: \"Company Name\",\n        text: {\n          maxLength: 200,\n          minLength: 1,\n        },\n        checkbox: {\n          label: \"I agree to the [terms and conditions](https://example.com/terms)\",\n        },\n      },\n    ],\n    metadata: {\n      \"userId\": \"user_123\",\n      \"visitCount\": 42,\n      \"lastVisit\": \"2023-04-01\",\n    },\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/licenses/activate": {
@@ -754,16 +1211,35 @@
             "description": "Successfully activated a license key",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/LicenseEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/LicenseEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Licenses"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.licenses.activate({\n    key: \"<key>\",\n    instanceName: \"<value>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/licenses/deactivate": {
@@ -788,16 +1264,35 @@
             "description": "Successfully deactivated a license key instance",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/LicenseEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/LicenseEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Licenses"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.licenses.deactivate({\n    key: \"<key>\",\n    instanceId: \"<id>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/licenses/validate": {
@@ -822,16 +1317,35 @@
             "description": "Successfully validated a license key instance",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/LicenseEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/LicenseEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Licenses"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.licenses.validate({\n    key: \"<key>\",\n    instanceId: \"<id>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/discounts/search": {
@@ -845,49 +1359,72 @@
             "required": false,
             "in": "query",
             "description": "The page number for pagination.",
-            "schema": { "default": 1, "example": 1, "type": "number" }
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
           },
           {
             "name": "page_size",
             "required": false,
             "in": "query",
             "description": "The number of items per page.",
-            "schema": { "default": 10, "example": 10, "type": "number" }
+            "schema": {
+              "default": 10,
+              "example": 10,
+              "type": "number"
+            }
           },
           {
             "name": "product_id",
             "required": false,
             "in": "query",
             "description": "Filter discounts that apply to a specific product.",
-            "schema": { "example": "prod_1234567890", "type": "string" }
+            "schema": {
+              "example": "prod_1234567890",
+              "type": "string"
+            }
           },
           {
             "name": "status",
             "required": false,
             "in": "query",
             "description": "Filter by discount status.",
-            "schema": { "enum": ["active", "deleted"], "type": "string" }
+            "schema": {
+              "enum": ["active", "deleted"],
+              "type": "string"
+            }
           },
           {
             "name": "type",
             "required": false,
             "in": "query",
             "description": "Filter by discount type.",
-            "schema": { "enum": ["percentage", "fixed"], "type": "string" }
+            "schema": {
+              "enum": ["percentage", "fixed"],
+              "type": "string"
+            }
           },
           {
             "name": "created_after",
             "required": false,
             "in": "query",
             "description": "Filter discounts created after this date.",
-            "schema": { "example": "2024-01-01T00:00:00Z", "type": "string" }
+            "schema": {
+              "example": "2024-01-01T00:00:00Z",
+              "type": "string"
+            }
           },
           {
             "name": "created_before",
             "required": false,
             "in": "query",
             "description": "Filter discounts created before this date.",
-            "schema": { "example": "2024-12-31T23:59:59Z", "type": "string" }
+            "schema": {
+              "example": "2024-12-31T23:59:59Z",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -895,16 +1432,35 @@
             "description": "Successfully retrieved the list of discounts",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/DiscountListEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/DiscountListEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Discounts"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.discounts.search(1, 10, \"prod_1234567890\", undefined, undefined, \"2024-01-01T00:00:00Z\", \"2024-12-31T23:59:59Z\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/discounts": {
@@ -918,14 +1474,20 @@
             "required": false,
             "in": "query",
             "description": "The unique identifier of the discount (provide either discount_id OR discount_code).",
-            "schema": { "example": "disc_1234567890", "type": "string" }
+            "schema": {
+              "example": "disc_1234567890",
+              "type": "string"
+            }
           },
           {
             "name": "discount_code",
             "required": false,
             "in": "query",
             "description": "The unique discount code (provide either discount_id OR discount_code).",
-            "schema": { "example": "SAVE20", "type": "string" }
+            "schema": {
+              "example": "SAVE20",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -933,16 +1495,35 @@
             "description": "Successfully retrieved the discount",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/DiscountEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/DiscountEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Discounts"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.discounts.get(\"disc_1234567890\", \"SAVE20\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       },
       "post": {
         "operationId": "createDiscount",
@@ -965,16 +1546,35 @@
             "description": "Successfully created a discount",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/DiscountEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/DiscountEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Discounts"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.discounts.create({\n    name: \"Holiday Sale\",\n    code: \"HOLIDAY2024\",\n    type: \"percentage\",\n    amount: 20,\n    currency: \"USD\",\n    percentage: 15,\n    expiryDate: new Date(\"2024-12-31T23:59:59Z\"),\n    maxRedemptions: 100,\n    duration: \"repeating\",\n    durationInMonths: 6,\n    appliesToProducts: [\n      \"prod_123\",\n      \"prod_456\",\n    ],\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/discounts/{id}/delete": {
@@ -988,7 +1588,9 @@
             "required": true,
             "in": "path",
             "description": "The unique identifier of the discount to delete",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -996,16 +1598,35 @@
             "description": "Successfully deleted a discount",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/DiscountEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/DiscountEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Discounts"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.discounts.delete(\"<id>\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/transactions": {
@@ -1019,7 +1640,10 @@
             "required": true,
             "in": "query",
             "description": "The unique identifier of the transaction.",
-            "schema": { "example": "txn_1234567890", "type": "string" }
+            "schema": {
+              "example": "txn_1234567890",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1027,16 +1651,35 @@
             "description": "Successfully retrieved transaction",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/TransactionEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Transactions"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.transactions.getById(\"txn_1234567890\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/transactions/search": {
@@ -1050,35 +1693,52 @@
             "required": false,
             "in": "query",
             "description": "Filter transactions by customer ID.",
-            "schema": { "example": "cust_1234567890", "type": "string" }
+            "schema": {
+              "example": "cust_1234567890",
+              "type": "string"
+            }
           },
           {
             "name": "order_id",
             "required": false,
             "in": "query",
             "description": "Filter transactions by order ID.",
-            "schema": { "example": "ord_1234567890", "type": "string" }
+            "schema": {
+              "example": "ord_1234567890",
+              "type": "string"
+            }
           },
           {
             "name": "product_id",
             "required": false,
             "in": "query",
             "description": "Filter transactions by product ID.",
-            "schema": { "example": "prod_1234567890", "type": "string" }
+            "schema": {
+              "example": "prod_1234567890",
+              "type": "string"
+            }
           },
           {
             "name": "page_number",
             "required": false,
             "in": "query",
             "description": "The page number for pagination.",
-            "schema": { "default": 1, "example": 1, "type": "number" }
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
           },
           {
             "name": "page_size",
             "required": false,
             "in": "query",
             "description": "The number of items per page.",
-            "schema": { "default": 10, "example": 10, "type": "number" }
+            "schema": {
+              "default": 10,
+              "example": 10,
+              "type": "number"
+            }
           }
         ],
         "responses": {
@@ -1092,12 +1752,29 @@
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Transactions"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.transactions.search(\"cust_1234567890\", \"ord_1234567890\", \"prod_1234567890\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/stats/summary": {
@@ -1111,27 +1788,37 @@
             "required": false,
             "in": "query",
             "description": "Start of the date range as a Unix timestamp in milliseconds (e.g. 1740614400000). When provided with endDate, filters totals to this range. Required when interval is specified.",
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "endDate",
             "required": false,
             "in": "query",
             "description": "End of the date range as a Unix timestamp in milliseconds (e.g. 1772150400000). When provided with startDate, filters totals to this range. Required when interval is specified.",
-            "schema": { "type": "number" }
+            "schema": {
+              "type": "number"
+            }
           },
           {
             "name": "interval",
             "required": false,
             "in": "query",
             "description": "Groups time-series data into buckets of this size. Requires startDate and endDate. Returns a periods array with one entry per bucket containing grossRevenue and netRevenue.",
-            "schema": { "enum": ["day", "week", "month"], "type": "string" }
+            "schema": {
+              "enum": ["day", "week", "month"],
+              "type": "string"
+            }
           },
           {
             "name": "currency",
             "required": true,
             "in": "query",
-            "schema": { "enum": ["EUR", "USD"], "type": "string" }
+            "schema": {
+              "enum": ["EUR", "USD"],
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1139,16 +1826,35 @@
             "description": "Successfully retrieved store metrics summary",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/StatsSummaryEntity" }
+                "schema": {
+                  "$ref": "#/components/schemas/StatsSummaryEntity"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Stats"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.stats.getSummary(\"USD\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/moderation/prompt": {
@@ -1162,7 +1868,9 @@
           "description": "Prompt screening request payload",
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/ScreenPromptRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/ScreenPromptRequest"
+              }
             }
           }
         },
@@ -1177,12 +1885,29 @@
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Moderation"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.moderation.screenPrompt({\n    prompt: \"<value>\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/customer-credits/accounts": {
@@ -1195,7 +1920,9 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateAccountDto" }
+              "schema": {
+                "$ref": "#/components/schemas/CreateAccountDto"
+              }
             }
           }
         },
@@ -1204,16 +1931,35 @@
             "description": "Account created",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AccountResponseDto" }
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponseDto"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Customer Credits - Accounts (Experimental)"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customerCredits.createAccount({\n    customerId: \"cust_abc123\",\n    initialBalance: \"300\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       },
       "get": {
         "operationId": "listCustomerCreditsAccounts",
@@ -1237,21 +1983,28 @@
             "required": false,
             "in": "query",
             "description": "Filter by owner ID (e.g. customer ID)",
-            "schema": { "example": "cust_abc123", "type": "string" }
+            "schema": {
+              "example": "cust_abc123",
+              "type": "string"
+            }
           },
           {
             "name": "starting_after",
             "required": false,
             "in": "query",
             "description": "Cursor for forward pagination — account ID to start after",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "ending_before",
             "required": false,
             "in": "query",
             "description": "Cursor for backward pagination — account ID to end before",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1265,12 +2018,29 @@
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Customer Credits - Accounts (Experimental)"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customerCredits.listAccounts(10, \"cust_abc123\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/customer-credits/accounts/{id}": {
@@ -1283,7 +2053,9 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1291,16 +2063,35 @@
             "description": "Account details",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AccountResponseDto" }
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponseDto"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Customer Credits - Accounts (Experimental)"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customerCredits.getAccount(\"<id>\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/customer-credits/accounts/{id}/balance": {
@@ -1313,7 +2104,9 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "at",
@@ -1331,16 +2124,35 @@
             "description": "Account balance",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/BalanceResponseDto" }
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceResponseDto"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Customer Credits - Accounts (Experimental)"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customerCredits.getAccountBalance(\"<id>\", \"2024-01-15T00:00:00.000Z\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/customer-credits/accounts/{id}/entries": {
@@ -1353,7 +2165,9 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "limit",
@@ -1372,14 +2186,18 @@
             "required": false,
             "in": "query",
             "description": "Cursor for forward pagination — entry ID to start after",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           },
           {
             "name": "ending_before",
             "required": false,
             "in": "query",
             "description": "Cursor for backward pagination — entry ID to end before",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1393,12 +2211,29 @@
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Customer Credits - Accounts (Experimental)"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customerCredits.listEntries(\"<id>\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/customer-credits/accounts/{id}/freeze": {
@@ -1411,7 +2246,9 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1419,13 +2256,21 @@
             "description": "Account frozen",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AccountResponseDto" }
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponseDto"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" },
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          },
           "409": {
             "description": "Account already frozen or closed",
             "content": {
@@ -1438,7 +2283,18 @@
           }
         },
         "tags": ["Customer Credits - Accounts (Experimental)"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customerCredits.freezeAccount(\"<id>\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/customer-credits/accounts/{id}/unfreeze": {
@@ -1451,7 +2307,9 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1459,13 +2317,21 @@
             "description": "Account unfrozen",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AccountResponseDto" }
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponseDto"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" },
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          },
           "409": {
             "description": "Account is not frozen or is closed",
             "content": {
@@ -1478,7 +2344,18 @@
           }
         },
         "tags": ["Customer Credits - Accounts (Experimental)"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customerCredits.unfreezeAccount(\"<id>\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/customer-credits/accounts/{id}/credit": {
@@ -1491,14 +2368,18 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreditDebitRequestDto" }
+              "schema": {
+                "$ref": "#/components/schemas/CreditDebitRequestDto"
+              }
             }
           }
         },
@@ -1513,9 +2394,15 @@
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" },
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          },
           "409": {
             "description": "Account frozen or closed",
             "content": {
@@ -1528,7 +2415,18 @@
           }
         },
         "tags": ["Customer Credits - Accounts (Experimental)"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customerCredits.creditAccount(\"<id>\", {\n    amount: \"1000\",\n    reference: \"signup_bonus\",\n    idempotencyKey: \"idem_abc123\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/customer-credits/accounts/{id}/debit": {
@@ -1541,14 +2439,18 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreditDebitRequestDto" }
+              "schema": {
+                "$ref": "#/components/schemas/CreditDebitRequestDto"
+              }
             }
           }
         },
@@ -1563,9 +2465,15 @@
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" },
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          },
           "409": {
             "description": "Account frozen or closed",
             "content": {
@@ -1578,7 +2486,18 @@
           }
         },
         "tags": ["Customer Credits - Accounts (Experimental)"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customerCredits.debitAccount(\"<id>\", {\n    amount: \"1000\",\n    reference: \"signup_bonus\",\n    idempotencyKey: \"idem_abc123\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/customer-credits/accounts/{id}/reverse": {
@@ -1591,7 +2510,9 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -1615,12 +2536,29 @@
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" }
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          }
         },
         "tags": ["Customer Credits - Accounts (Experimental)"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customerCredits.reverseTransaction(\"<id>\", {\n    transactionId: \"cct_abc123\",\n  });\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     },
     "/v1/customer-credits/accounts/{id}/close": {
@@ -1633,7 +2571,9 @@
             "name": "id",
             "required": true,
             "in": "path",
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1641,13 +2581,21 @@
             "description": "Account closed",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AccountResponseDto" }
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponseDto"
+                }
               }
             }
           },
-          "400": { "description": "Bad Request - Invalid input parameters" },
-          "401": { "description": "Unauthorized - Invalid or missing API key" },
-          "404": { "description": "Not Found - Resource does not exist" },
+          "400": {
+            "description": "Bad Request - Invalid input parameters"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "description": "Not Found - Resource does not exist"
+          },
           "409": {
             "description": "Account already closed",
             "content": {
@@ -1660,7 +2608,18 @@
           }
         },
         "tags": ["Customer Credits - Accounts (Experimental)"],
-        "security": [{ "ApiKey": [] }]
+        "security": [
+          {
+            "ApiKey": []
+          }
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "typescript",
+            "label": "TypeScript SDK",
+            "source": "import { Creem } from \"creem\";\n\nconst creem = new Creem({\n  apiKey: process.env[\"CREEM_API_KEY\"] ?? \"\",\n});\n\nasync function run() {\n  const result = await creem.customerCredits.closeAccount(\"<id>\");\n\n  console.log(result);\n}\n\nrun();"
+          }
+        ]
       }
     }
   },
@@ -1673,11 +2632,21 @@
       "url": "https://creem.io",
       "email": "support@creem.io"
     },
-    "license": { "name": "Commercial", "url": "https://creem.io/terms" },
+    "license": {
+      "name": "Commercial",
+      "url": "https://creem.io/terms"
+    },
     "termsOfService": "https://creem.io/terms"
   },
   "tags": [],
-  "servers": [{ "url": "https://api.creem.io" }, { "url": "https://test-api.creem.io" }],
+  "servers": [
+    {
+      "url": "https://api.creem.io"
+    },
+    {
+      "url": "https://test-api.creem.io"
+    }
+  ],
   "components": {
     "securitySchemes": {
       "ApiKey": {
@@ -1726,7 +2695,13 @@
       "ProductBillingPeriod": {
         "type": "string",
         "description": "Billing period",
-        "enum": ["every-month", "every-three-months", "every-six-months", "every-year", "once"]
+        "enum": [
+          "every-month",
+          "every-three-months",
+          "every-six-months",
+          "every-year",
+          "once"
+        ]
       },
       "ProductStatus": {
         "type": "string",
@@ -1786,7 +2761,9 @@
       "CustomField": {
         "type": "object",
         "properties": {
-          "type": { "$ref": "#/components/schemas/CustomFieldType" },
+          "type": {
+            "$ref": "#/components/schemas/CustomFieldType"
+          },
           "key": {
             "type": "string",
             "description": "Unique key for custom field. Must be unique to this field, alphanumeric, and up to 200 characters.",
@@ -1805,12 +2782,20 @@
           "text": {
             "description": "Configuration for text field type.",
             "nullable": true,
-            "allOf": [{ "$ref": "#/components/schemas/Text" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Text"
+              }
+            ]
           },
           "checkbox": {
             "description": "Configuration for checkbox field type.",
             "nullable": true,
-            "allOf": [{ "$ref": "#/components/schemas/Checkbox" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Checkbox"
+              }
+            ]
           }
         },
         "required": ["type", "key", "label"]
@@ -1822,7 +2807,9 @@
             "type": "string",
             "description": "Unique identifier for the object."
           },
-          "mode": { "$ref": "#/components/schemas/EnvironmentMode" },
+          "mode": {
+            "$ref": "#/components/schemas/EnvironmentMode"
+          },
           "object": {
             "type": "string",
             "description": "String representing the object's type. Objects of the same type share the same value."
@@ -1844,7 +2831,9 @@
           "features": {
             "description": "Features of the product.",
             "type": "array",
-            "items": { "$ref": "#/components/schemas/FeatureEntity" }
+            "items": {
+              "$ref": "#/components/schemas/FeatureEntity"
+            }
           },
           "price": {
             "type": "number",
@@ -1864,7 +2853,9 @@
             "example": "every-month",
             "$ref": "#/components/schemas/ProductBillingPeriod"
           },
-          "status": { "$ref": "#/components/schemas/ProductStatus" },
+          "status": {
+            "$ref": "#/components/schemas/ProductStatus"
+          },
           "tax_mode": {
             "example": "inclusive",
             "$ref": "#/components/schemas/TaxMode"
@@ -1888,7 +2879,9 @@
             "description": "Custom fields configured for the product. Collect additional information from your customer during checkout.",
             "nullable": true,
             "type": "array",
-            "items": { "$ref": "#/components/schemas/CustomField" }
+            "items": {
+              "$ref": "#/components/schemas/CustomField"
+            }
           },
           "created_at": {
             "format": "date-time",
@@ -1951,19 +2944,31 @@
             "nullable": true
           }
         },
-        "required": ["total_records", "total_pages", "current_page", "next_page", "prev_page"]
+        "required": [
+          "total_records",
+          "total_pages",
+          "current_page",
+          "next_page",
+          "prev_page"
+        ]
       },
       "ProductListEntity": {
         "type": "object",
         "properties": {
           "items": {
             "description": "List of product items",
-            "items": { "$ref": "#/components/schemas/ProductEntity" },
+            "items": {
+              "$ref": "#/components/schemas/ProductEntity"
+            },
             "type": "array"
           },
           "pagination": {
             "description": "Pagination details for the list",
-            "allOf": [{ "$ref": "#/components/schemas/PaginationEntity" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PaginationEntity"
+              }
+            ]
           }
         },
         "required": ["items", "pagination"]
@@ -1981,7 +2986,13 @@
       "ProductRequestBillingPeriod": {
         "type": "string",
         "description": "Billing period, required if billing_type is recurring",
-        "enum": ["once", "every-month", "every-three-months", "every-six-months", "every-year"]
+        "enum": [
+          "once",
+          "every-month",
+          "every-three-months",
+          "every-six-months",
+          "every-year"
+        ]
       },
       "CustomFieldRequestType": {
         "type": "string",
@@ -2038,11 +3049,19 @@
           },
           "text": {
             "description": "Configuration for text field type.",
-            "allOf": [{ "$ref": "#/components/schemas/TextFieldConfig" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TextFieldConfig"
+              }
+            ]
           },
           "checkbox": {
             "description": "Configuration for checkbox field type.",
-            "allOf": [{ "$ref": "#/components/schemas/CheckboxFieldConfig" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CheckboxFieldConfig"
+              }
+            ]
           }
         },
         "required": ["type", "key", "label"]
@@ -2050,7 +3069,10 @@
       "CreateProductRequestEntity": {
         "type": "object",
         "properties": {
-          "name": { "type": "string", "description": "Name of the product" },
+          "name": {
+            "type": "string",
+            "description": "Name of the product"
+          },
           "description": {
             "type": "string",
             "description": "Description of the product"
@@ -2093,13 +3115,17 @@
           "custom_fields": {
             "description": "Collect additional information from your customer using custom fields during checkout. Up to 3 fields are supported.",
             "type": "array",
-            "items": { "$ref": "#/components/schemas/CustomFieldRequestEntity" }
+            "items": {
+              "$ref": "#/components/schemas/CustomFieldRequestEntity"
+            }
           },
           "custom_field": {
             "description": "DEPRECATED: Use `custom_fields` instead. Collect additional information from your customer using custom fields during checkout. Up to 3 fields are supported.",
             "deprecated": true,
             "type": "array",
-            "items": { "$ref": "#/components/schemas/CustomFieldRequestEntity" }
+            "items": {
+              "$ref": "#/components/schemas/CustomFieldRequestEntity"
+            }
           },
           "abandoned_cart_recovery_enabled": {
             "type": "boolean",
@@ -2116,7 +3142,9 @@
             "type": "string",
             "description": "Unique identifier for the object."
           },
-          "mode": { "$ref": "#/components/schemas/EnvironmentMode" },
+          "mode": {
+            "$ref": "#/components/schemas/EnvironmentMode"
+          },
           "object": {
             "type": "string",
             "description": "String representing the object’s type. Objects of the same type share the same value."
@@ -2135,7 +3163,9 @@
           "metadata": {
             "type": "object",
             "description": "Additional metadata associated with the customer.",
-            "example": { "key": "value" },
+            "example": {
+              "key": "value"
+            },
             "nullable": true
           },
           "country": {
@@ -2157,19 +3187,33 @@
             "example": "2023-01-01T00:00:00Z"
           }
         },
-        "required": ["id", "mode", "object", "email", "country", "created_at", "updated_at"]
+        "required": [
+          "id",
+          "mode",
+          "object",
+          "email",
+          "country",
+          "created_at",
+          "updated_at"
+        ]
       },
       "CustomerListEntity": {
         "type": "object",
         "properties": {
           "items": {
             "description": "List of customer items",
-            "items": { "$ref": "#/components/schemas/CustomerEntity" },
+            "items": {
+              "$ref": "#/components/schemas/CustomerEntity"
+            },
             "type": "array"
           },
           "pagination": {
             "description": "Pagination details for the list",
-            "allOf": [{ "$ref": "#/components/schemas/PaginationEntity" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PaginationEntity"
+              }
+            ]
           }
         },
         "required": ["items", "pagination"]
@@ -2191,7 +3235,9 @@
             "type": "string",
             "description": "Unique identifier for the object."
           },
-          "mode": { "$ref": "#/components/schemas/EnvironmentMode" },
+          "mode": {
+            "$ref": "#/components/schemas/EnvironmentMode"
+          },
           "object": {
             "type": "string",
             "description": "String representing the object's type. Objects of the same type share the same value."
@@ -2314,12 +3360,18 @@
         "properties": {
           "items": {
             "description": "List of order items",
-            "items": { "$ref": "#/components/schemas/OrderEntity" },
+            "items": {
+              "$ref": "#/components/schemas/OrderEntity"
+            },
             "type": "array"
           },
           "pagination": {
             "description": "Pagination details for the list",
-            "allOf": [{ "$ref": "#/components/schemas/PaginationEntity" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PaginationEntity"
+              }
+            ]
           }
         },
         "required": ["items", "pagination"]
@@ -2331,7 +3383,9 @@
             "type": "string",
             "description": "Unique identifier for the object."
           },
-          "mode": { "$ref": "#/components/schemas/EnvironmentMode" },
+          "mode": {
+            "$ref": "#/components/schemas/EnvironmentMode"
+          },
           "object": {
             "type": "string",
             "description": "String representing the object’s type. Objects of the same type share the same value."
@@ -2360,7 +3414,14 @@
       "SubscriptionStatus": {
         "type": "string",
         "description": "The current status of the subscription.",
-        "enum": ["active", "canceled", "unpaid", "paused", "trialing", "scheduled_cancel"]
+        "enum": [
+          "active",
+          "canceled",
+          "unpaid",
+          "paused",
+          "trialing",
+          "scheduled_cancel"
+        ]
       },
       "TransactionType": {
         "type": "string",
@@ -2389,7 +3450,9 @@
             "type": "string",
             "description": "Unique identifier for the object."
           },
-          "mode": { "$ref": "#/components/schemas/EnvironmentMode" },
+          "mode": {
+            "$ref": "#/components/schemas/EnvironmentMode"
+          },
           "object": {
             "type": "string",
             "description": "String representing the object's type. Objects of the same type share the same value.",
@@ -2417,7 +3480,9 @@
             "description": "Three-letter ISO currency code, in uppercase. Must be a supported currency.",
             "example": "USD"
           },
-          "type": { "$ref": "#/components/schemas/TransactionType" },
+          "type": {
+            "$ref": "#/components/schemas/TransactionType"
+          },
           "tax_country": {
             "type": "string",
             "description": "The ISO alpha-2 country code where tax is collected.",
@@ -2431,7 +3496,9 @@
             "example": 2000,
             "nullable": true
           },
-          "status": { "$ref": "#/components/schemas/TransactionStatus" },
+          "status": {
+            "$ref": "#/components/schemas/TransactionStatus"
+          },
           "refunded_amount": {
             "type": "number",
             "description": "The amount that has been refunded in cents. 1000 = $10.00",
@@ -2470,7 +3537,16 @@
             "description": "Creation date of the order as timestamp"
           }
         },
-        "required": ["id", "mode", "object", "amount", "currency", "type", "status", "created_at"]
+        "required": [
+          "id",
+          "mode",
+          "object",
+          "amount",
+          "currency",
+          "type",
+          "status",
+          "created_at"
+        ]
       },
       "SubscriptionEntity": {
         "type": "object",
@@ -2479,7 +3555,9 @@
             "type": "string",
             "description": "Unique identifier for the object."
           },
-          "mode": { "$ref": "#/components/schemas/EnvironmentMode" },
+          "mode": {
+            "$ref": "#/components/schemas/EnvironmentMode"
+          },
           "object": {
             "type": "string",
             "description": "String representing the object's type. Objects of the same type share the same value.",
@@ -2487,16 +3565,32 @@
           },
           "product": {
             "description": "The product associated with the subscription.",
-            "oneOf": [{ "$ref": "#/components/schemas/ProductEntity" }, { "type": "string" }]
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProductEntity"
+              },
+              {
+                "type": "string"
+              }
+            ]
           },
           "customer": {
             "description": "The customer who owns the subscription.",
-            "oneOf": [{ "$ref": "#/components/schemas/CustomerEntity" }, { "type": "string" }]
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CustomerEntity"
+              },
+              {
+                "type": "string"
+              }
+            ]
           },
           "items": {
             "description": "Subscription items.",
             "type": "array",
-            "items": { "$ref": "#/components/schemas/SubscriptionItemEntity" }
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionItemEntity"
+            }
           },
           "collection_method": {
             "example": "charge_automatically",
@@ -2513,7 +3607,11 @@
           },
           "last_transaction": {
             "description": "The last paid transaction.",
-            "allOf": [{ "$ref": "#/components/schemas/TransactionEntity" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TransactionEntity"
+              }
+            ]
           },
           "last_transaction_date": {
             "format": "date-time",
@@ -2580,12 +3678,18 @@
         "properties": {
           "items": {
             "description": "List of subscription items",
-            "items": { "$ref": "#/components/schemas/SubscriptionEntity" },
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionEntity"
+            },
             "type": "array"
           },
           "pagination": {
             "description": "Pagination details for the list",
-            "allOf": [{ "$ref": "#/components/schemas/PaginationEntity" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PaginationEntity"
+              }
+            ]
           }
         },
         "required": ["items", "pagination"]
@@ -2602,7 +3706,9 @@
             "type": "string",
             "description": "Unique identifier for the object."
           },
-          "mode": { "$ref": "#/components/schemas/EnvironmentMode" },
+          "mode": {
+            "$ref": "#/components/schemas/EnvironmentMode"
+          },
           "object": {
             "type": "string",
             "description": "A string representing the object’s type. Objects of the same type share the same value.",
@@ -2635,7 +3741,9 @@
             "type": "string",
             "description": "Unique identifier for the object."
           },
-          "mode": { "$ref": "#/components/schemas/EnvironmentMode" },
+          "mode": {
+            "$ref": "#/components/schemas/EnvironmentMode"
+          },
           "object": {
             "type": "string",
             "description": "A string representing the object's type. Objects of the same type share the same value."
@@ -2681,7 +3789,11 @@
           "instance": {
             "description": "Associated license instances.",
             "nullable": true,
-            "allOf": [{ "$ref": "#/components/schemas/LicenseInstanceEntity" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LicenseInstanceEntity"
+              }
+            ]
           }
         },
         "required": [
@@ -2700,12 +3812,18 @@
         "properties": {
           "items": {
             "description": "List of license items",
-            "items": { "$ref": "#/components/schemas/LicenseEntity" },
+            "items": {
+              "$ref": "#/components/schemas/LicenseEntity"
+            },
             "type": "array"
           },
           "pagination": {
             "description": "Pagination details for the list",
-            "allOf": [{ "$ref": "#/components/schemas/PaginationEntity" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PaginationEntity"
+              }
+            ]
           }
         },
         "required": ["items", "pagination"]
@@ -2726,7 +3844,9 @@
           "metadata": {
             "type": "object",
             "description": "Additional metadata for the customer.",
-            "example": { "key": "value" }
+            "example": {
+              "key": "value"
+            }
           }
         },
         "required": ["email", "name"]
@@ -2747,7 +3867,9 @@
           "metadata": {
             "type": "object",
             "description": "Additional metadata for the customer.",
-            "example": { "key": "value" }
+            "example": {
+              "key": "value"
+            }
           }
         },
         "required": ["customer_id"]
@@ -2823,7 +3945,11 @@
           "update_behavior": {
             "type": "string",
             "description": "The update behavior for the subscription (defaults to proration)",
-            "enum": ["proration-charge-immediately", "proration-charge", "proration-none"],
+            "enum": [
+              "proration-charge-immediately",
+              "proration-charge",
+              "proration-none"
+            ],
             "default": "proration-charge"
           }
         }
@@ -2839,7 +3965,11 @@
           "update_behavior": {
             "type": "string",
             "description": "The update behavior for the subscription (defaults to proration-charge-immediately)",
-            "enum": ["proration-charge-immediately", "proration-charge", "proration-none"],
+            "enum": [
+              "proration-charge-immediately",
+              "proration-charge",
+              "proration-none"
+            ],
             "default": "proration-charge-immediately"
           }
         },
@@ -2882,7 +4012,9 @@
           "files": {
             "description": "List of downloadable files.",
             "type": "array",
-            "items": { "$ref": "#/components/schemas/FeatureFileEntity" }
+            "items": {
+              "$ref": "#/components/schemas/FeatureFileEntity"
+            }
           }
         },
         "required": ["files"]
@@ -2933,23 +4065,39 @@
           "file": {
             "description": "File feature data containing downloadable files.",
             "nullable": true,
-            "allOf": [{ "$ref": "#/components/schemas/FileFeatureEntity" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FileFeatureEntity"
+              }
+            ]
           },
           "license_key": {
             "description": "License key issued for the order.",
             "nullable": true,
-            "allOf": [{ "$ref": "#/components/schemas/LicenseEntity" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LicenseEntity"
+              }
+            ]
           },
           "customer_credits": {
             "description": "Customer credits feature data.",
             "nullable": true,
-            "allOf": [{ "$ref": "#/components/schemas/CustomerCreditsFeatureEntity" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomerCreditsFeatureEntity"
+              }
+            ]
           },
           "license": {
             "description": "DEPRECATED: Use `license_key` instead. License key issued for the order.",
             "nullable": true,
             "deprecated": true,
-            "allOf": [{ "$ref": "#/components/schemas/LicenseEntity" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LicenseEntity"
+              }
+            ]
           }
         }
       },
@@ -2960,7 +4108,9 @@
             "type": "string",
             "description": "Unique identifier for the object."
           },
-          "mode": { "$ref": "#/components/schemas/EnvironmentMode" },
+          "mode": {
+            "$ref": "#/components/schemas/EnvironmentMode"
+          },
           "object": {
             "type": "string",
             "description": "String representing the object's type. Objects of the same type share the same value."
@@ -2977,7 +4127,14 @@
           },
           "product": {
             "description": "The product associated with the checkout session.",
-            "oneOf": [{ "type": "string" }, { "$ref": "#/components/schemas/ProductEntity" }]
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/ProductEntity"
+              }
+            ]
           },
           "units": {
             "type": "number",
@@ -2986,20 +4143,40 @@
           },
           "order": {
             "description": "The order associated with the checkout session.",
-            "allOf": [{ "$ref": "#/components/schemas/OrderEntity" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/OrderEntity"
+              }
+            ]
           },
           "subscription": {
             "description": "The subscription associated with the checkout session.",
-            "oneOf": [{ "type": "string" }, { "$ref": "#/components/schemas/SubscriptionEntity" }]
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/SubscriptionEntity"
+              }
+            ]
           },
           "customer": {
             "description": "The customer associated with the checkout session.",
-            "oneOf": [{ "type": "string" }, { "$ref": "#/components/schemas/CustomerEntity" }]
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/CustomerEntity"
+              }
+            ]
           },
           "custom_fields": {
             "description": "Additional information collected from your customer during the checkout process.",
             "type": "array",
-            "items": { "$ref": "#/components/schemas/CustomField" }
+            "items": {
+              "$ref": "#/components/schemas/CustomField"
+            }
           },
           "checkout_url": {
             "type": "string",
@@ -3014,13 +4191,17 @@
           "license_keys": {
             "description": "License keys issued for the order.",
             "type": "array",
-            "items": { "$ref": "#/components/schemas/LicenseEntity" }
+            "items": {
+              "$ref": "#/components/schemas/LicenseEntity"
+            }
           },
           "feature": {
             "description": "DEPRECATED: Use `license_keys` instead. Features issued for the order.",
             "deprecated": true,
             "type": "array",
-            "items": { "$ref": "#/components/schemas/ProductFeatureEntity" }
+            "items": {
+              "$ref": "#/components/schemas/ProductFeatureEntity"
+            }
           },
           "metadata": {
             "type": "object",
@@ -3074,18 +4255,26 @@
           },
           "customer": {
             "description": "Customer data for checkout session. This will prefill the customer info on the checkout page.",
-            "allOf": [{ "$ref": "#/components/schemas/CustomerRequestEntity" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomerRequestEntity"
+              }
+            ]
           },
           "custom_fields": {
             "description": "Collect additional information from your customer using custom fields. Up to 3 fields are supported.",
             "type": "array",
-            "items": { "$ref": "#/components/schemas/CustomFieldRequestEntity" }
+            "items": {
+              "$ref": "#/components/schemas/CustomFieldRequestEntity"
+            }
           },
           "custom_field": {
             "description": "DEPRECATED: Use `custom_fields` instead. Collect additional information from your customer using custom fields. Up to 3 fields are supported.",
             "deprecated": true,
             "type": "array",
-            "items": { "$ref": "#/components/schemas/CustomFieldRequestEntity" }
+            "items": {
+              "$ref": "#/components/schemas/CustomFieldRequestEntity"
+            }
           },
           "success_url": {
             "type": "string",
@@ -3153,7 +4342,9 @@
             "type": "string",
             "description": "Unique identifier for the object."
           },
-          "mode": { "$ref": "#/components/schemas/EnvironmentMode" },
+          "mode": {
+            "$ref": "#/components/schemas/EnvironmentMode"
+          },
           "object": {
             "type": "string",
             "description": "A string representing the object’s type. Objects of the same type share the same value.",
@@ -3222,7 +4413,9 @@
             "description": "The list of product IDs to which this discount applies.",
             "example": ["prod_123", "prod_456"],
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           },
           "redeem_count": {
             "type": "number",
@@ -3237,12 +4430,18 @@
         "properties": {
           "items": {
             "description": "List of discount items",
-            "items": { "$ref": "#/components/schemas/DiscountEntity" },
+            "items": {
+              "$ref": "#/components/schemas/DiscountEntity"
+            },
             "type": "array"
           },
           "pagination": {
             "description": "Pagination details for the list",
-            "allOf": [{ "$ref": "#/components/schemas/PaginationEntity" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PaginationEntity"
+              }
+            ]
           }
         },
         "required": ["items", "pagination"]
@@ -3270,7 +4469,9 @@
             "description": "Optional discount code. If left empty, a code will be generated.",
             "example": "HOLIDAY2024"
           },
-          "type": { "$ref": "#/components/schemas/DiscountType" },
+          "type": {
+            "$ref": "#/components/schemas/DiscountType"
+          },
           "amount": {
             "type": "number",
             "description": "The fixed value for the discount. Only applicable if the type is \"fixed\".",
@@ -3310,7 +4511,9 @@
             "description": "The list of product IDs to which this discount applies.",
             "example": ["prod_123", "prod_456"],
             "type": "array",
-            "items": { "type": "string" }
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": ["name", "type", "duration", "applies_to_products"]
@@ -3320,12 +4523,18 @@
         "properties": {
           "items": {
             "description": "List of transactions items",
-            "items": { "$ref": "#/components/schemas/TransactionEntity" },
+            "items": {
+              "$ref": "#/components/schemas/TransactionEntity"
+            },
             "type": "array"
           },
           "pagination": {
             "description": "Pagination details for the list",
-            "allOf": [{ "$ref": "#/components/schemas/PaginationEntity" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PaginationEntity"
+              }
+            ]
           }
         },
         "required": ["items", "pagination"]
@@ -3417,7 +4626,11 @@
         "properties": {
           "totals": {
             "description": "Aggregated totals for the queried date range",
-            "allOf": [{ "$ref": "#/components/schemas/StatsMetricTotalsEntity" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StatsMetricTotalsEntity"
+              }
+            ]
           },
           "periods": {
             "description": "Time-series data points grouped by the requested interval. Only present when interval, startDate, and endDate are provided.",
@@ -3464,7 +4677,9 @@
               }
             ],
             "type": "array",
-            "items": { "$ref": "#/components/schemas/StatsMetricPeriodEntity" }
+            "items": {
+              "$ref": "#/components/schemas/StatsMetricPeriodEntity"
+            }
           }
         },
         "required": ["totals"]
@@ -3520,7 +4735,11 @@
           },
           "usage": {
             "description": "Usage information for this call.",
-            "allOf": [{ "$ref": "#/components/schemas/UsageEntity" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/UsageEntity"
+              }
+            ]
           }
         },
         "required": ["id", "object", "prompt", "decision", "usage"]
@@ -3561,7 +4780,10 @@
             "description": "Account ID",
             "example": "cca_abc123"
           },
-          "store_id": { "type": "string", "description": "Store ID" },
+          "store_id": {
+            "type": "string",
+            "description": "Store ID"
+          },
           "customer_id": {
             "type": "string",
             "description": "Owner ID",
@@ -3613,7 +4835,9 @@
           "data": {
             "description": "Array of accounts",
             "type": "array",
-            "items": { "$ref": "#/components/schemas/AccountResponseDto" }
+            "items": {
+              "$ref": "#/components/schemas/AccountResponseDto"
+            }
           },
           "has_more": {
             "type": "boolean",
@@ -3674,7 +4898,14 @@
             "description": "Creation timestamp"
           }
         },
-        "required": ["id", "transaction_id", "account_id", "side", "amount", "created_at"]
+        "required": [
+          "id",
+          "transaction_id",
+          "account_id",
+          "side",
+          "amount",
+          "created_at"
+        ]
       },
       "EntryListResponseDto": {
         "type": "object",
@@ -3687,7 +4918,9 @@
           "data": {
             "description": "Array of entries",
             "type": "array",
-            "items": { "$ref": "#/components/schemas/EntryResponseDto" }
+            "items": {
+              "$ref": "#/components/schemas/EntryResponseDto"
+            }
           },
           "has_more": {
             "type": "boolean",
@@ -3740,7 +4973,11 @@
         "properties": {
           "error": {
             "description": "Error details",
-            "allOf": [{ "$ref": "#/components/schemas/CustomerCreditsErrorDetailDto" }]
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CustomerCreditsErrorDetailDto"
+              }
+            ]
           }
         },
         "required": ["error"]
@@ -3774,7 +5011,10 @@
             "description": "Transaction ID",
             "example": "cct_abc123"
           },
-          "store_id": { "type": "string", "description": "Store ID" },
+          "store_id": {
+            "type": "string",
+            "description": "Store ID"
+          },
           "reference": {
             "type": "string",
             "description": "Reference string",
@@ -3792,14 +5032,23 @@
           "entries": {
             "description": "Transaction entries",
             "type": "array",
-            "items": { "$ref": "#/components/schemas/EntryResponseDto" }
+            "items": {
+              "$ref": "#/components/schemas/EntryResponseDto"
+            }
           },
           "created_at": {
             "type": "string",
             "description": "Creation timestamp"
           }
         },
-        "required": ["id", "store_id", "reference", "idempotency_key", "entries", "created_at"]
+        "required": [
+          "id",
+          "store_id",
+          "reference",
+          "idempotency_key",
+          "entries",
+          "created_at"
+        ]
       },
       "ReverseTransactionRequestDto": {
         "type": "object",
