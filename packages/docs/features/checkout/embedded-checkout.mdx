@@ -301,6 +301,28 @@ Creem.openCheckout({
 
 By default the checkout follows the customer's **browser language**. Pass `locale` to force a specific one (e.g. to match your own site's language). Unsupported locales fall back to English. See the [supported languages](/features/checkout/checkout-api) for the full list.
 
+## Authorized embed origins
+
+Because the embed uses open framing — any site can load `embed.js` — you can declare **which domains you actually embed your checkout on** under [Settings → General](https://www.creem.io/dashboard/settings/general) in your dashboard. A checkout embedded on an origin that isn't yours then stands out and is flagged for **fraud review**, instead of every embed looking the same.
+
+<Frame caption="Authorized Embed Origins — dashboard → Settings → General">
+  <img
+    style={{ borderRadius: '0.5rem' }}
+    src="/images/authorized-embed-origins.png"
+    alt="Authorized Embed Origins settings card listing the domains where checkout may be embedded"
+  />
+</Frame>
+
+This is **optional** and **detection-only** — it never blocks, declines, or changes checkout behavior:
+
+- **Domains listed** → an embed on any other origin is flagged for review. Subdomains match automatically (e.g. `app.yourdomain.com` matches `yourdomain.com`).
+- **Left empty** → your **business website** is used as the baseline, so an embed on a different domain is still flagged. Add your embed domains here to clear those.
+- **Empty and no business website set** → nothing is flagged.
+
+<Tip>
+  If you only embed on your own site you can leave this empty — the business-website baseline already covers you. Add origins when you embed on **other** domains too (partner sites, a separate app, builder previews).
+</Tip>
+
 ## API reference
 
 The framework SDKs (`@creem_io/react`, `/vue`, `/svelte`) accept these same options — as props/args, with `onComplete`/`onClose` surfaced as the `complete`/`close` events where idiomatic.
