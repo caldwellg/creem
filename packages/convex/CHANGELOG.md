@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.2
+
+### Patch Changes
+
+- bb581ac: Bump creem SDK dependency to 1.5.3
+
+## 0.3.1
+
+### Patch Changes
+
+- a979bc4: Bump creem SDK dependency to 1.5.1
+
 ## 0.3.0
 
 Breaking changes
