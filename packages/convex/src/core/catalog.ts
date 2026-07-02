@@ -1,11 +1,27 @@
 import type {
   BillingType,
+  CatalogProductRef,
+  CreditGrant,
+  PlanId,
   PlanCatalog,
   PlanCatalogEntry,
   PlanCategory,
   RecurringCycle,
   SupportedRecurringCycle,
+  AppPlanActivation,
 } from "./types.js";
+
+export type AppPlanEligibilityContext = {
+  /**
+   * Currently active catalog plan ID.
+   * Keeps the active plan visible even when it is otherwise ineligible.
+   */
+  activePlanId?: string | null;
+  /** Explicitly active or scheduled catalog plan IDs in this billing context. */
+  activeOrScheduledPlanIds?: readonly string[];
+  /** Catalog entries used to resolve scopes/categories for active plan IDs. */
+  catalogPlans?: readonly PlanCatalogEntry[];
+};
 
 /** All billing cycles supported by the Creem API, in display order. */
 export const SUPPORTED_RECURRING_CYCLES: SupportedRecurringCycle[] = [
@@ -28,6 +44,21 @@ const BILLING_TYPES: BillingType[] = ["recurring", "onetime", "custom"];
 const PLAN_CATEGORY_SET = new Set(PLAN_CATEGORIES);
 const BILLING_TYPE_SET = new Set(BILLING_TYPES);
 const RECURRING_CYCLE_SET = new Set(SUPPORTED_RECURRING_CYCLES);
+
+export const defineBillingCatalog = <const TCatalog extends PlanCatalog>(
+  catalog: TCatalog,
+): TCatalog => catalog;
+
+export const plansOf = <
+  const TCatalog extends PlanCatalog,
+  const TPlanIds extends readonly PlanId<TCatalog>[],
+>(
+  _catalog: TCatalog,
+  planIds: TPlanIds,
+): TPlanIds => planIds;
+
+const toProductId = (ref: CatalogProductRef): string =>
+  typeof ref === "string" ? ref : ref.productId;
 
 /** Type guard: check if a string is a supported Creem billing cycle. */
 export const isSupportedRecurringCycle = (
@@ -90,6 +121,16 @@ export const normalizePlanCatalog = (
       billingCycles: (plan.billingCycles ?? [])
         .map((cycle) => normalizeRecurringCycle(cycle))
         .flatMap((cycle) => (cycle ? [cycle] : [])),
+      creemProductIds:
+        plan.creemProductIds ??
+        (plan.products
+          ? Object.fromEntries(
+              Object.entries(plan.products).map(([cycle, ref]) => [
+                cycle,
+                toProductId(ref),
+              ]),
+            )
+          : undefined),
     })),
   };
 };
@@ -116,4 +157,88 @@ export const findPlanByProductId = (
   return catalog.plans.find((plan) =>
     Object.values(plan.creemProductIds ?? {}).includes(productId),
   );
+};
+
+/** Find the app-side credit grant configured for a Creem product ID. */
+export const findCreditGrantByProductId = (
+  catalog: PlanCatalog | undefined,
+  productId: string | undefined,
+): CreditGrant | undefined =>
+  findPlanByProductId(catalog, productId)?.creditGrant;
+
+/** Whether a catalog plan is owned by the host app rather than a Creem checkout. */
+export const isAppOwnedPlan = (plan: PlanCatalogEntry): boolean =>
+  plan.billingType === "custom" ||
+  plan.category === "free" ||
+  plan.category === "trial" ||
+  plan.category === "custom";
+
+/** Whether an app-owned plan has already been activated for this billing entity. */
+export const hasAppPlanActivation = (
+  activations: readonly AppPlanActivation[] | undefined,
+  planId: string,
+): boolean =>
+  (activations ?? []).some((activation) => activation.planId === planId);
+
+/** Whether an app-owned plan is currently eligible under its catalog policy. */
+export const isAppPlanEligible = (
+  plan: PlanCatalogEntry,
+  activations: readonly AppPlanActivation[] | undefined,
+  context: AppPlanEligibilityContext = {},
+): boolean => {
+  const activePlanId = context.activePlanId;
+  const activeOrScheduledPlanIds = new Set(context.activeOrScheduledPlanIds);
+
+  if (activePlanId === plan.planId) {
+    return true;
+  }
+  if (activeOrScheduledPlanIds.has(plan.planId)) {
+    return true;
+  }
+  if (
+    plan.eligibility?.expiresWhenScopeHasNonTrialPlan &&
+    plan.eligibilityScopeId &&
+    context.catalogPlans
+  ) {
+    const scopeHasNonTrialPlan = context.catalogPlans.some(
+      (catalogPlan) =>
+        catalogPlan.planId !== plan.planId &&
+        catalogPlan.eligibilityScopeId === plan.eligibilityScopeId &&
+        catalogPlan.category !== "trial" &&
+        activeOrScheduledPlanIds.has(catalogPlan.planId),
+    );
+    if (scopeHasNonTrialPlan) {
+      return false;
+    }
+  }
+  if (!plan.eligibility?.oncePerEntity) {
+    return true;
+  }
+  return !hasAppPlanActivation(activations, plan.planId);
+};
+
+/** Whether the default composed pricing widgets should render this plan. */
+export const shouldShowPlan = (
+  plan: PlanCatalogEntry,
+  activations: readonly AppPlanActivation[] | undefined,
+  context: AppPlanEligibilityContext = {},
+): boolean =>
+  isAppPlanEligible(plan, activations, context) ||
+  !plan.eligibility?.hideWhenIneligible;
+
+export const resolvePlanProductId = (
+  catalog: PlanCatalog | undefined,
+  planId: string,
+  cycle: RecurringCycle,
+): string => {
+  const plan = findPlanById(catalog, planId);
+  if (!plan) {
+    throw new Error(`Unknown billing plan "${planId}"`);
+  }
+  const productIds = plan.creemProductIds;
+  const productId = productIds?.[cycle] ?? productIds?.custom;
+  if (!productId) {
+    throw new Error(`Billing plan "${planId}" has no product for "${cycle}"`);
+  }
+  return productId;
 };

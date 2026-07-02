@@ -4,7 +4,6 @@
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
-    "customConditions": ["creem/source"],
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",

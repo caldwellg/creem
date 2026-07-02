@@ -105,6 +105,57 @@ export default defineSchema(
       .index("id", ["id"])
       .index("customerId", ["customerId"])
       .index("customerId_productId", ["customerId", "productId"]),
+    scheduledSubscriptionUpdates: defineTable({
+      entityId: v.string(),
+      subscriptionId: v.string(),
+      targetProductId: v.optional(v.string()),
+      targetPlanId: v.optional(v.string()),
+      targetUnits: v.optional(v.number()),
+      effectiveAt: v.string(),
+      status: v.union(
+        v.literal("pending"),
+        v.literal("applying"),
+        v.literal("applied"),
+        v.literal("superseded"),
+        v.literal("failed"),
+      ),
+      scheduledFunctionId: v.optional(v.id("_scheduled_functions")),
+      error: v.optional(v.string()),
+      createdAt: v.string(),
+      updatedAt: v.string(),
+    })
+      .index("entityId_status", ["entityId", "status"])
+      .index("subscriptionId_status", ["subscriptionId", "status"]),
+    appPlanActivations: defineTable({
+      entityId: v.string(),
+      planId: v.string(),
+      firstActivatedAt: v.number(),
+      lastActivatedAt: v.number(),
+      activationCount: v.number(),
+      activatedByUserId: v.optional(v.string()),
+    })
+      .index("entityId", ["entityId"])
+      .index("entityId_planId", ["entityId", "planId"]),
+    appPlanAssignments: defineTable({
+      entityId: v.string(),
+      planId: v.string(),
+      status: v.union(
+        v.literal("active"),
+        v.literal("scheduled"),
+        v.literal("ended"),
+      ),
+      startsAt: v.string(),
+      endsAt: v.optional(v.union(v.string(), v.null())),
+      source: v.optional(v.string()),
+      subscriptionId: v.optional(v.string()),
+      assignedByUserId: v.optional(v.string()),
+      createdAt: v.string(),
+      updatedAt: v.string(),
+    })
+      .index("entityId", ["entityId"])
+      .index("entityId_status", ["entityId", "status"])
+      .index("entityId_planId_status", ["entityId", "planId", "status"])
+      .index("subscriptionId_status", ["subscriptionId", "status"]),
   },
   {
     schemaValidation: true,

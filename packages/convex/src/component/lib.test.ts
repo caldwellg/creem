@@ -1048,9 +1048,8 @@ describe("listUserOrders query", () => {
     expect(orders).toEqual([]);
   });
 
-  it("filters to only paid onetime orders", async () => {
+  it("filters to only onetime orders and keeps payment statuses", async () => {
     await t.mutation(api.lib.insertCustomer, createTestCustomer());
-    // Paid onetime — should be included
     await t.mutation(api.lib.createOrder, {
       order: createTestOrder({
         id: "ord_paid",
@@ -1058,7 +1057,6 @@ describe("listUserOrders query", () => {
         type: "onetime",
       }),
     });
-    // Pending onetime — should be excluded
     await t.mutation(api.lib.createOrder, {
       order: createTestOrder({
         id: "ord_pending",
@@ -1077,8 +1075,11 @@ describe("listUserOrders query", () => {
     const orders = await t.query(api.lib.listUserOrders, {
       entityId: "user_456",
     });
-    expect(orders).toHaveLength(1);
-    expect(orders[0].id).toBe("ord_paid");
+    expect(orders).toHaveLength(2);
+    expect(orders.map((order) => order.id).sort()).toEqual([
+      "ord_paid",
+      "ord_pending",
+    ]);
   });
 });
 
@@ -1207,6 +1208,297 @@ describe("patchSubscription mutation", () => {
     const fields = meta._optimisticFields as string[];
     expect(fields).toContain("seats");
     expect(fields).toContain("productId");
+  });
+});
+
+describe("scheduled subscription update mutations", () => {
+  let t: TestConvex<typeof schema>;
+
+  beforeEach(() => {
+    t = convexTest(schema, modules);
+  });
+
+  it("creates and lists pending scheduled updates", async () => {
+    const id = await t.mutation(api.lib.createScheduledSubscriptionUpdate, {
+      entityId: "user_456",
+      subscriptionId: "sub_1",
+      targetProductId: "prod_basic",
+      effectiveAt: "2026-03-01T00:00:00.000Z",
+    });
+
+    const update = await t.query(api.lib.getScheduledSubscriptionUpdate, {
+      scheduledUpdateId: id,
+    });
+    expect(update).toMatchObject({
+      entityId: "user_456",
+      subscriptionId: "sub_1",
+      targetProductId: "prod_basic",
+      effectiveAt: "2026-03-01T00:00:00.000Z",
+      status: "pending",
+    });
+
+    const pending = await t.query(
+      api.lib.listPendingScheduledSubscriptionUpdates,
+      {
+        entityId: "user_456",
+      },
+    );
+    expect(pending).toHaveLength(1);
+    expect(pending[0].subscriptionId).toBe("sub_1");
+  });
+
+  it("supersedes an existing pending update for the same subscription", async () => {
+    await t.mutation(api.lib.createScheduledSubscriptionUpdate, {
+      entityId: "user_456",
+      subscriptionId: "sub_1",
+      targetProductId: "prod_basic",
+      effectiveAt: "2026-03-01T00:00:00.000Z",
+    });
+    await t.mutation(api.lib.createScheduledSubscriptionUpdate, {
+      entityId: "user_456",
+      subscriptionId: "sub_1",
+      targetUnits: 2,
+      effectiveAt: "2026-03-01T00:00:00.000Z",
+    });
+
+    const pending = await t.query(
+      api.lib.listPendingScheduledSubscriptionUpdates,
+      {
+        entityId: "user_456",
+      },
+    );
+    expect(pending).toHaveLength(1);
+    expect(pending[0].targetUnits).toBe(2);
+  });
+
+  it("cancels a pending scheduled update", async () => {
+    await t.mutation(api.lib.createScheduledSubscriptionUpdate, {
+      entityId: "user_456",
+      subscriptionId: "sub_1",
+      targetPlanId: "free",
+      effectiveAt: "2026-03-01T00:00:00.000Z",
+    });
+
+    const canceled = await t.mutation(
+      api.lib.cancelScheduledSubscriptionUpdate,
+      {
+        entityId: "user_456",
+        subscriptionId: "sub_1",
+      },
+    );
+
+    expect(canceled).toMatchObject({
+      entityId: "user_456",
+      subscriptionId: "sub_1",
+      targetPlanId: "free",
+      status: "superseded",
+    });
+
+    const pending = await t.query(
+      api.lib.listPendingScheduledSubscriptionUpdates,
+      {
+        entityId: "user_456",
+      },
+    );
+    expect(pending).toHaveLength(0);
+  });
+
+  it("cancels all pending scheduled updates for a subscription", async () => {
+    await t.mutation(api.lib.createScheduledSubscriptionUpdate, {
+      entityId: "user_456",
+      subscriptionId: "sub_1",
+      targetProductId: "prod_basic",
+      effectiveAt: "2026-03-01T00:00:00.000Z",
+    });
+    await t.mutation(api.lib.createScheduledSubscriptionUpdate, {
+      entityId: "user_456",
+      subscriptionId: "sub_2",
+      targetPlanId: "free",
+      effectiveAt: "2026-03-01T00:00:00.000Z",
+    });
+
+    const canceled = await t.mutation(
+      api.lib.cancelPendingScheduledSubscriptionUpdates,
+      {
+        entityId: "user_456",
+        subscriptionId: "sub_1",
+      },
+    );
+
+    expect(canceled).toHaveLength(1);
+    expect(canceled[0]).toMatchObject({
+      subscriptionId: "sub_1",
+      targetProductId: "prod_basic",
+      status: "superseded",
+    });
+
+    const pending = await t.query(
+      api.lib.listPendingScheduledSubscriptionUpdates,
+      {
+        entityId: "user_456",
+      },
+    );
+    expect(pending).toHaveLength(1);
+    expect(pending[0].subscriptionId).toBe("sub_2");
+  });
+
+  it("rejects scheduled updates without a target", async () => {
+    await expect(
+      t.mutation(api.lib.createScheduledSubscriptionUpdate, {
+        entityId: "user_456",
+        subscriptionId: "sub_1",
+        effectiveAt: "2026-03-01T00:00:00.000Z",
+      }),
+    ).rejects.toThrow(
+      "Provide exactly one scheduled target: targetProductId, targetPlanId, or targetUnits",
+    );
+  });
+});
+
+describe("app plan activation history", () => {
+  let t: TestConvex<typeof schema>;
+
+  beforeEach(() => {
+    t = convexTest(schema, modules);
+  });
+
+  it("records the first activation for an app-owned plan", async () => {
+    const activation = await t.mutation(api.lib.recordAppPlanActivation, {
+      entityId: "org_1",
+      planId: "trial",
+      activatedByUserId: "user_1",
+      oncePerEntity: true,
+    });
+
+    expect(activation).toMatchObject({
+      entityId: "org_1",
+      planId: "trial",
+      activationCount: 1,
+      activatedByUserId: "user_1",
+    });
+
+    const stored = await t.query(api.lib.getAppPlanActivation, {
+      entityId: "org_1",
+      planId: "trial",
+    });
+    expect(stored?.firstActivatedAt).toBe(activation.firstActivatedAt);
+  });
+
+  it("rejects repeated activation when oncePerEntity is enabled", async () => {
+    await t.mutation(api.lib.recordAppPlanActivation, {
+      entityId: "org_1",
+      planId: "trial",
+      oncePerEntity: true,
+    });
+
+    await expect(
+      t.mutation(api.lib.recordAppPlanActivation, {
+        entityId: "org_1",
+        planId: "trial",
+        oncePerEntity: true,
+      }),
+    ).rejects.toThrow('Plan "trial" was already activated');
+  });
+
+  it("increments activation count when repeat activation is allowed", async () => {
+    await t.mutation(api.lib.recordAppPlanActivation, {
+      entityId: "org_1",
+      planId: "open",
+    });
+    const activation = await t.mutation(api.lib.recordAppPlanActivation, {
+      entityId: "org_1",
+      planId: "open",
+    });
+
+    expect(activation.activationCount).toBe(2);
+
+    const activations = await t.query(api.lib.listAppPlanActivations, {
+      entityId: "org_1",
+    });
+    expect(activations).toHaveLength(1);
+    expect(activations[0].activationCount).toBe(2);
+  });
+
+  it("stores a current app-owned plan assignment", async () => {
+    const assignment = await t.mutation(api.lib.assignAppPlan, {
+      entityId: "org_1",
+      planId: "free",
+      assignedByUserId: "user_1",
+      source: "manual",
+    });
+
+    expect(assignment).toMatchObject({
+      entityId: "org_1",
+      planId: "free",
+      status: "active",
+      assignedByUserId: "user_1",
+      source: "manual",
+    });
+
+    const assignments = await t.query(api.lib.listAppPlanAssignments, {
+      entityId: "org_1",
+    });
+    expect(assignments).toHaveLength(1);
+    expect(assignments[0].status).toBe("active");
+  });
+
+  it("replaces the previous active app-owned plan assignment", async () => {
+    await t.mutation(api.lib.assignAppPlan, {
+      entityId: "org_1",
+      planId: "trial",
+    });
+    await t.mutation(api.lib.assignAppPlan, {
+      entityId: "org_1",
+      planId: "free",
+    });
+
+    const assignments = await t.query(api.lib.listAppPlanAssignments, {
+      entityId: "org_1",
+    });
+    expect(assignments.filter((item) => item.status === "active")).toHaveLength(
+      1,
+    );
+    expect(assignments.find((item) => item.planId === "trial")?.status).toBe(
+      "ended",
+    );
+    expect(assignments.find((item) => item.planId === "free")?.status).toBe(
+      "active",
+    );
+  });
+
+  it("activates or cancels scheduled app-owned plan assignments", async () => {
+    await t.mutation(api.lib.assignAppPlan, {
+      entityId: "org_1",
+      planId: "free",
+      status: "scheduled",
+      startsAt: "2026-03-01T00:00:00.000Z",
+      subscriptionId: "sub_1",
+    });
+
+    const activated = await t.mutation(
+      api.lib.activateScheduledAppPlanAssignment,
+      {
+        subscriptionId: "sub_1",
+        planId: "free",
+      },
+    );
+    expect(activated?.status).toBe("active");
+
+    await t.mutation(api.lib.assignAppPlan, {
+      entityId: "org_1",
+      planId: "trial",
+      status: "scheduled",
+      startsAt: "2026-04-01T00:00:00.000Z",
+      subscriptionId: "sub_2",
+    });
+    const canceled = await t.mutation(
+      api.lib.cancelScheduledAppPlanAssignment,
+      {
+        subscriptionId: "sub_2",
+        planId: "trial",
+      },
+    );
+    expect(canceled?.status).toBe("ended");
   });
 });
 

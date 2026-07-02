@@ -11,67 +11,206 @@ import { Dialog } from "@ark-ui/react/dialog";
 import { Portal } from "@ark-ui/react/portal";
 
 import { PricingSection } from "../primitives/PricingSection.js";
+import { SegmentGroup } from "../primitives/SegmentGroup.js";
 import { PaymentWarningBanner } from "../primitives/PaymentWarningBanner.js";
 import { ScheduledChangeBanner } from "../primitives/ScheduledChangeBanner.js";
 
 import { SubscriptionContext } from "./subscriptionContext.js";
 import { pendingCheckout } from "../../core/pendingCheckout.js";
+import { getConvexErrorMessage } from "../../core/convexError.js";
 
 import type {
+  PlanCatalog,
+  PlanCatalogEntry,
   UIPlanEntry,
   RecurringCycle,
+  FreePlanUpdateBehaviorIntent,
+  FreePlanUpdateBehaviorSetting,
+  ResolvedUpdateBehavior,
+  SupportedRecurringCycle,
   UpdateBehavior,
+  UpdateBehaviorIntent,
+  UpdateBehaviorSetting,
 } from "../../core/types.js";
-import { buildUpdateSummary } from "../../core/subscriptionUpdate.js";
-import { formatPriceWithInterval, formatSeatPrice } from "../shared.js";
+import {
+  mergeBillingLabels,
+  resolveBillingI18n,
+  type BillingI18n,
+  type BillingLabelOverrides,
+} from "../../core/i18n.js";
+import {
+  findPlanById,
+  normalizePlanCatalog,
+  shouldShowPlan,
+} from "../../core/catalog.js";
+import {
+  buildUpdateSummary,
+  resolveFreePlanUpdateBehavior,
+  resolveTargetUpdateBehavior,
+} from "../../core/subscriptionUpdate.js";
+import {
+  formatPriceWithInterval,
+  formatUnitPrice,
+  formatUnitPriceBreakdown,
+} from "../../core/display.js";
+import {
+  requireCreemConvexApi,
+  useCreemConvex,
+} from "../CreemConvexProvider.js";
 import type {
   BillingPermissions,
   CheckoutIntent,
-  ConnectedBillingApi,
+  PlanChangeIntent,
   ConnectedBillingModel,
+  SubscriptionGroupRegistration,
   SubscriptionPlanRegistration,
 } from "./types.js";
 
+const getFallbackSuccessUrl = (): string | undefined => {
+  if (typeof window === "undefined") return undefined;
+  return `${window.location.origin}${window.location.pathname}`;
+};
+
+const getPreferredTheme = (): "light" | "dark" => {
+  if (typeof window === "undefined") return "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+};
+
+const formatGroupTitle = (value: string) =>
+  value
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
+const planTypeToCategory = (
+  type: SubscriptionPlanRegistration["type"],
+  fallback?: PlanCatalogEntry,
+) => {
+  if (type === "free") return "free";
+  if (type === "enterprise") return "enterprise";
+  return fallback?.category ?? "paid";
+};
+
+const planTypeToBillingType = (
+  type: SubscriptionPlanRegistration["type"],
+  fallback?: PlanCatalogEntry,
+) => {
+  if (type === "free" || type === "enterprise") return "custom";
+  return fallback?.billingType ?? "recurring";
+};
+
 export const SubscriptionRoot = ({
-  api,
+  catalog,
+  plans: planIds,
+  groups,
+  defaultGroup,
+  group,
+  onGroupChange,
+  groupSelector = "auto",
+  defaultCycle,
+  cycle,
+  onCycleChange,
+  intervalSelector = "auto",
+  cycleBadges,
   permissions,
   className = "",
   successUrl,
   units,
-  showSeatPicker = false,
-  twoColumnLayout = false,
-  updateBehavior = "proration-charge-immediately",
+  showUnitPicker = false,
+  columns = "auto",
+  updateBehavior,
+  freePlanUpdateBehavior,
+  unstyled = false,
   onBeforeCheckout,
+  onBeforePlanChange,
+  onBeforePlanActivation,
+  labels: labelOverrides,
+  i18n,
   children,
 }: PropsWithChildren<{
-  api: ConnectedBillingApi;
+  catalog?: PlanCatalog;
+  plans?: readonly string[];
+  groups?: SubscriptionGroupRegistration[];
+  defaultGroup?: string;
+  group?: string;
+  onGroupChange?: (group: string) => void;
+  groupSelector?: "auto" | "hidden" | "external";
+  defaultCycle?: RecurringCycle;
+  cycle?: RecurringCycle;
+  onCycleChange?: (cycle: RecurringCycle) => void;
+  intervalSelector?: "auto" | "hidden" | "external";
+  cycleBadges?: Partial<Record<SupportedRecurringCycle, string>>;
   permissions?: BillingPermissions;
   class?: string;
   className?: string;
   successUrl?: string;
   units?: number;
-  showSeatPicker?: boolean;
-  twoColumnLayout?: boolean;
-  updateBehavior?: UpdateBehavior;
+  showUnitPicker?: boolean;
+  columns?: "auto" | 1 | 2 | 3 | 4;
+  /** Paid subscription update behavior for paid-to-paid plan switches and unit changes. */
+  updateBehavior?: UpdateBehaviorSetting;
+  /** Cancellation behavior for paid-to-free or paid-to-app-owned plan switches. */
+  freePlanUpdateBehavior?: FreePlanUpdateBehaviorSetting;
+  unstyled?: boolean;
   onBeforeCheckout?: (intent: CheckoutIntent) => Promise<boolean> | boolean;
+  onBeforePlanChange?: (intent: PlanChangeIntent) => Promise<boolean> | boolean;
+  onBeforePlanActivation?: (intent: {
+    planId: string;
+  }) => Promise<boolean> | boolean;
+  labels?: BillingLabelOverrides;
+  i18n?: BillingI18n;
 }>) => {
-  const canChange = permissions?.canChangeSubscription !== false;
-  const canCancel = permissions?.canCancelSubscription !== false;
-  const canResume = permissions?.canResumeSubscription !== false;
+  const provider = useCreemConvex();
+  const resolvedApi = requireCreemConvexApi("Subscription.Root", provider);
+  const resolvedCatalog = catalog ?? provider?.catalog;
+  const resolvedDefaultCycle =
+    defaultCycle ?? provider?.defaultCycle ?? "every-month";
+  const resolvedPermissions = permissions ?? provider?.permissions;
+  const resolvedOnBeforeCheckout =
+    onBeforeCheckout ?? provider?.onBeforeCheckout;
+  const resolvedOnBeforePlanChange =
+    onBeforePlanChange ?? provider?.onBeforePlanChange;
+  const resolvedOnBeforePlanActivation =
+    onBeforePlanActivation ?? provider?.onBeforePlanActivation;
+  const resolvedI18n = useMemo(() => {
+    const providerI18n = resolveBillingI18n(provider?.i18n);
+    return {
+      locale: i18n?.locale ?? providerI18n.locale,
+      labels: mergeBillingLabels(
+        labelOverrides,
+        mergeBillingLabels(i18n?.labels, providerI18n.labels),
+      ),
+      formatCurrency: i18n?.formatCurrency ?? providerI18n.formatCurrency,
+      formatDate: i18n?.formatDate ?? providerI18n.formatDate,
+    };
+  }, [provider?.i18n, i18n, labelOverrides]);
+
+  const canChange = resolvedPermissions?.canChangeSubscription !== false;
+  const canCancel = resolvedPermissions?.canCancelSubscription !== false;
+  const canResume = resolvedPermissions?.canResumeSubscription !== false;
 
   const client = useConvex();
 
-  const billingUiModelRef = api.uiModel;
-  const checkoutLinkRef = api.checkouts.create;
-  const updateRef = api.subscriptions?.update;
-  const cancelRef = api.subscriptions?.cancel;
-  const resumeRef = api.subscriptions?.resume;
+  const billingUiModelRef = resolvedApi.uiModel;
+  const checkoutLinkRef = resolvedApi.checkouts.create;
+  const updateRef = resolvedApi.subscriptions?.update;
+  const cancelRef = resolvedApi.subscriptions?.cancel;
+  const resumeRef = resolvedApi.subscriptions?.resume;
+  const cancelScheduledUpdateRef =
+    resolvedApi.subscriptions?.cancelScheduledUpdate;
+  const activateAppPlanRef = resolvedApi.plans?.activate;
 
   const modelRaw = useQuery(billingUiModelRef, {});
   const model = (modelRaw ?? null) as ConnectedBillingModel | null;
 
   const [selectedCycle, setSelectedCycle] =
-    useState<RecurringCycle>("every-month");
+    useState<RecurringCycle>(resolvedDefaultCycle);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(
+    defaultGroup ?? null,
+  );
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
@@ -79,10 +218,12 @@ export const SubscriptionRoot = ({
     | {
         kind: "plan-switch";
         plan: UIPlanEntry;
-        productId: string;
+        productId?: string;
+        appPlanId?: string;
+        freePlanId?: string;
         units?: number;
       }
-    | { kind: "seat-update"; units: number }
+    | { kind: "unit-update"; units: number }
     | null
   >(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -90,31 +231,52 @@ export const SubscriptionRoot = ({
     SubscriptionPlanRegistration[]
   >([]);
 
-  const contextValue = useMemo(
-    () => ({
-      registerPlan: (plan: SubscriptionPlanRegistration) => {
-        setRegisteredPlans((prev) => [
-          ...prev.filter((c) => c.planId !== plan.planId),
-          plan,
-        ]);
-        return () => {
-          setRegisteredPlans((prev) =>
-            prev.filter((c) => c.planId !== plan.planId),
-          );
-        };
-      },
-    }),
-    [],
-  );
+  const registerPlan = useCallback((plan: SubscriptionPlanRegistration) => {
+    setRegisteredPlans((prev) => [
+      ...prev.filter((c) => c.planId !== plan.planId),
+      plan,
+    ]);
+    return () => {
+      setRegisteredPlans((prev) =>
+        prev.filter((c) => c.planId !== plan.planId),
+      );
+    };
+  }, []);
 
   const allProducts = useMemo(
     () => model?.allProducts ?? [],
     [model?.allProducts],
   );
 
+  const normalizedCatalog = useMemo(
+    () => normalizePlanCatalog(resolvedCatalog),
+    [resolvedCatalog],
+  );
+
+  const catalogRegistrations = useMemo<SubscriptionPlanRegistration[]>(() => {
+    const ids =
+      groups && groups.length > 0
+        ? groups.flatMap((entry) => entry.plans)
+        : (planIds ?? []);
+    return ids.flatMap((planId) => {
+      const groupEntry = groups?.find((entry) => entry.plans.includes(planId));
+      return [
+        {
+          planId,
+          groupId: groupEntry?.value,
+          groupTitle: groupEntry?.label,
+        },
+      ];
+    });
+  }, [groups, planIds]);
+
   const plans = useMemo<UIPlanEntry[]>(() => {
-    return registeredPlans.map((plan) => {
-      const productIds = plan.productIds ?? {};
+    const registrations = [...catalogRegistrations, ...registeredPlans];
+    return registrations.map((plan) => {
+      const catalogEntry = normalizedCatalog
+        ? findPlanById(normalizedCatalog, plan.planId)
+        : undefined;
+      const productIds = plan.productIds ?? catalogEntry?.creemProductIds ?? {};
       const firstProductId = Object.values(productIds)[0];
       const firstProduct = firstProductId
         ? allProducts.find((p) => p.id === firstProductId)
@@ -126,24 +288,31 @@ export const SubscriptionRoot = ({
 
       const entry: UIPlanEntry = {
         planId: plan.planId,
-        category:
-          plan.type === "free"
-            ? "free"
-            : plan.type === "enterprise"
-              ? "enterprise"
-              : "paid",
-        billingType:
-          plan.type === "free" || plan.type === "enterprise"
-            ? "custom"
-            : "recurring",
-        pricingModel: plan.type === "seat-based" ? "seat" : "flat",
+        category: planTypeToCategory(plan.type, catalogEntry),
+        billingType: planTypeToBillingType(plan.type, catalogEntry),
+        pricingModel:
+          plan.type === "unit-based"
+            ? "unit"
+            : (catalogEntry?.pricingModel ?? "flat"),
+        groupId: plan.groupId ?? catalogEntry?.groupId,
+        groupTitle: plan.groupTitle ?? catalogEntry?.groupTitle,
+        eligibilityScopeId: catalogEntry?.eligibilityScopeId,
         title:
           plan.title ??
+          catalogEntry?.title ??
           firstProduct?.name ??
           plan.planId.charAt(0).toUpperCase() + plan.planId.slice(1),
-        description: plan.description ?? firstProduct?.description ?? undefined,
-        contactUrl: plan.contactUrl,
-        recommended: plan.recommended,
+        description:
+          plan.description ??
+          catalogEntry?.description ??
+          firstProduct?.description ??
+          undefined,
+        contactUrl: plan.contactUrl ?? catalogEntry?.contactUrl,
+        recommended: plan.recommended ?? catalogEntry?.recommended,
+        limits: catalogEntry?.limits,
+        creditGrant: catalogEntry?.creditGrant,
+        eligibility: catalogEntry?.eligibility,
+        metadata: catalogEntry?.metadata,
         creemProductIds:
           Object.keys(productIds).length > 0
             ? (productIds as Record<string, string>)
@@ -154,7 +323,115 @@ export const SubscriptionRoot = ({
       }
       return entry;
     });
-  }, [registeredPlans, allProducts]);
+  }, [allProducts, catalogRegistrations, normalizedCatalog, registeredPlans]);
+
+  const groupItems = useMemo(() => {
+    if (groups && groups.length > 0) {
+      return groups.map((entry) => ({
+        value: entry.value,
+        label: entry.label,
+      }));
+    }
+    const inferredGroups = new Map<string, string>();
+    for (const plan of plans) {
+      if (!plan.groupId) continue;
+      if (!inferredGroups.has(plan.groupId)) {
+        inferredGroups.set(
+          plan.groupId,
+          plan.groupTitle ?? formatGroupTitle(plan.groupId),
+        );
+      }
+    }
+    return Array.from(inferredGroups, ([value, label]) => ({ value, label }));
+  }, [groups, plans]);
+
+  const requestedGroupId = group ?? selectedGroupId ?? defaultGroup ?? null;
+  const activeGroupId =
+    groupItems.length > 1 &&
+    requestedGroupId &&
+    groupItems.some((item) => item.value === requestedGroupId)
+      ? requestedGroupId
+      : (groupItems[0]?.value ?? null);
+
+  const groupedPlans = useMemo(() => {
+    if (groupItems.length <= 1 || !activeGroupId) return plans;
+    return plans.filter((plan) => plan.groupId === activeGroupId);
+  }, [activeGroupId, groupItems.length, plans]);
+
+  const availableCycles = useMemo(() => {
+    const cycles = new Set<RecurringCycle>();
+    for (const plan of groupedPlans) {
+      for (const planCycle of plan.billingCycles ?? []) {
+        cycles.add(planCycle);
+      }
+    }
+    return Array.from(cycles);
+  }, [groupedPlans]);
+  const effectiveCycle = useMemo(() => {
+    const requestedCycle = cycle ?? selectedCycle;
+    if (
+      availableCycles.length === 0 ||
+      availableCycles.includes(requestedCycle)
+    ) {
+      return requestedCycle;
+    }
+    return availableCycles[0] ?? requestedCycle;
+  }, [availableCycles, cycle, selectedCycle]);
+
+  const getCyclesForGroup = useCallback(
+    (groupId: string | null) => {
+      const targetPlans =
+        groupItems.length > 1 && groupId
+          ? plans.filter((plan) => plan.groupId === groupId)
+          : plans;
+      const cycles = new Set<RecurringCycle>();
+      for (const plan of targetPlans) {
+        for (const planCycle of plan.billingCycles ?? []) {
+          cycles.add(planCycle);
+        }
+      }
+      return Array.from(cycles);
+    },
+    [groupItems.length, plans],
+  );
+
+  const clampCycleForGroup = useCallback(
+    (groupId: string | null) => {
+      const targetCycles = getCyclesForGroup(groupId);
+      const requestedCycle = cycle ?? selectedCycle;
+      if (targetCycles.length === 0 || targetCycles.includes(requestedCycle)) {
+        return;
+      }
+      const nextCycle = targetCycles[0];
+      if (!nextCycle) return;
+      if (cycle == null) {
+        setSelectedCycle(nextCycle);
+      }
+      onCycleChange?.(nextCycle);
+    },
+    [cycle, getCyclesForGroup, onCycleChange, selectedCycle],
+  );
+
+  const handleCycleChange = useCallback(
+    (next: RecurringCycle) => {
+      const nextEffectiveCycle =
+        availableCycles.length === 0 || availableCycles.includes(next)
+          ? next
+          : (availableCycles[0] ?? next);
+      setSelectedCycle(nextEffectiveCycle);
+      onCycleChange?.(nextEffectiveCycle);
+    },
+    [availableCycles, onCycleChange],
+  );
+
+  const handleGroupChange = useCallback(
+    (next: string) => {
+      clampCycleForGroup(next);
+      setSelectedGroupId(next);
+      onGroupChange?.(next);
+    },
+    [clampCycleForGroup, onGroupChange],
+  );
 
   // Collect all product IDs that belong to plans in THIS component instance
   const ownProductIds = useMemo(() => {
@@ -181,71 +458,246 @@ export const SubscriptionRoot = ({
   const localCancelAtPeriodEnd =
     matchedSubscription?.cancelAtPeriodEnd ?? false;
   const localCurrentPeriodEnd = matchedSubscription?.currentPeriodEnd ?? null;
+  const formattedCancelPeriodEnd = useMemo(() => {
+    if (!localCurrentPeriodEnd) return undefined;
+    const date = new Date(localCurrentPeriodEnd);
+    if (Number.isNaN(date.getTime())) return undefined;
+    return resolvedI18n.formatDate({ date });
+  }, [localCurrentPeriodEnd, resolvedI18n]);
+  const cancelDescription =
+    resolvedI18n.labels.subscription.dialogs.cancelDescription({
+      formattedDate: formattedCancelPeriodEnd,
+    });
   const localSubscriptionState = matchedSubscription?.status ?? null;
-  const localSubscribedSeats = matchedSubscription?.seats ?? null;
+  const localSubscribedUnits = matchedSubscription?.units ?? null;
+  const localScheduledUpdate = useMemo(
+    () =>
+      (model?.scheduledSubscriptionUpdates ?? []).find(
+        (update) => update.subscriptionId === matchedSubscription?.id,
+      ) ?? null,
+    [model?.scheduledSubscriptionUpdates, matchedSubscription?.id],
+  );
+  const formattedScheduledEffectiveDate = useMemo(() => {
+    if (!localScheduledUpdate?.effectiveAt) return null;
+    const date = new Date(localScheduledUpdate.effectiveAt);
+    if (Number.isNaN(date.getTime())) return null;
+    return resolvedI18n.formatDate({ date });
+  }, [localScheduledUpdate, resolvedI18n]);
 
-  const snapshot = model?.billingSnapshot ?? null;
+  const snapshot = model?.snapshot ?? null;
 
   const canCheckout =
-    !model?.user && onBeforeCheckout != null
+    !model?.user && resolvedOnBeforeCheckout != null
       ? true
-      : permissions?.canCheckout !== false;
+      : resolvedPermissions?.canCheckout !== false;
 
-  const canUpdateSeats =
-    !model?.user && onBeforeCheckout != null
+  const canUpdateUnits =
+    !model?.user && resolvedOnBeforeCheckout != null
       ? true
-      : permissions?.canUpdateSeats !== false;
+      : resolvedPermissions?.canUpdateUnits !== false;
 
   const activePlanId = useMemo(() => {
     if (!model) return null;
     const subProductId = localSubscriptionProductId;
     if (subProductId) {
-      const matchedPlan = registeredPlans.find((plan) => {
-        const values = Object.values(plan.productIds ?? {}).filter(
+      const matchedPlan = plans.find((plan) => {
+        const values = Object.values(plan.creemProductIds ?? {}).filter(
           Boolean,
         ) as string[];
         return values.includes(subProductId);
       });
       return matchedPlan?.planId ?? null;
     }
+    if (model.activePlanId !== undefined) {
+      return model.activePlanId;
+    }
+    const assignedPlanId =
+      model.appPlanAssignments?.find(
+        (assignment) =>
+          assignment.status === "active" &&
+          plans.some((plan) => plan.planId === assignment.planId),
+      )?.planId ?? null;
+    if (assignedPlanId) {
+      return assignedPlanId;
+    }
+    if (model.activeFreePlanId !== undefined) {
+      return model.activeFreePlanId;
+    }
     if (model.user) {
       const freePlan = plans.find((p) => p.category === "free");
       if (freePlan) return freePlan.planId;
     }
     return null;
-  }, [model, localSubscriptionProductId, registeredPlans, plans]);
+  }, [model, localSubscriptionProductId, plans]);
 
-  // Pending checkout resume after auth
-  const pendingCheckoutHandled = useRef(false);
-  useEffect(() => {
-    if (!model?.user || pendingCheckoutHandled.current) return;
-    pendingCheckoutHandled.current = true;
-    const pending = pendingCheckout.load();
-    if (!pending) return;
-    if ((model.activeSubscriptions ?? []).length > 0) {
-      pendingCheckout.clear();
-      return;
+  const activeOrScheduledPlanIds = useMemo(() => {
+    if (!model) return [];
+    const planIds = new Set<string>();
+    const addPlanId = (planId: string | null | undefined) => {
+      if (planId && plans.some((plan) => plan.planId === planId)) {
+        planIds.add(planId);
+      }
+    };
+    const addProductId = (productId: string | null | undefined) => {
+      const plan = productId
+        ? plans.find((candidate) =>
+            Object.values(candidate.creemProductIds ?? {})
+              .filter(Boolean)
+              .includes(productId),
+          )
+        : null;
+      if (plan) {
+        planIds.add(plan.planId);
+      }
+    };
+
+    addProductId(localSubscriptionProductId);
+    addPlanId(model.activePlanId);
+    addPlanId(model.activeFreePlanId);
+
+    for (const subscription of model.activeSubscriptions ?? []) {
+      addProductId(subscription.productId);
     }
-    startCheckout(pending.productId, pending.units);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [model?.user]);
+    for (const assignment of model.appPlanAssignments ?? []) {
+      if (assignment.status === "active" || assignment.status === "scheduled") {
+        addPlanId(assignment.planId);
+      }
+    }
+    for (const update of model.scheduledSubscriptionUpdates ?? []) {
+      addProductId(update.targetProductId);
+      addPlanId(update.targetPlanId);
+    }
 
-  const getFallbackSuccessUrl = (): string | undefined => {
-    if (typeof window === "undefined") return undefined;
-    return `${window.location.origin}${window.location.pathname}`;
-  };
+    return Array.from(planIds);
+  }, [localSubscriptionProductId, model, plans]);
 
-  const getPreferredTheme = (): "light" | "dark" => {
-    if (typeof window === "undefined") return "light";
-    return window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
-  };
+  const visiblePlans = useMemo(
+    () =>
+      groupedPlans.filter((plan) =>
+        shouldShowPlan(plan, model?.appPlanActivations, {
+          activePlanId,
+          activeOrScheduledPlanIds,
+          catalogPlans: plans,
+        }),
+      ),
+    [
+      activeOrScheduledPlanIds,
+      activePlanId,
+      groupedPlans,
+      model?.appPlanActivations,
+      plans,
+    ],
+  );
+
+  const getProductPrice = useCallback(
+    (productId?: string | null) =>
+      productId
+        ? (allProducts.find((product) => product.id === productId)?.price ??
+          null)
+        : null,
+    [allProducts],
+  );
+
+  const getPlanForProduct = useCallback(
+    (productId?: string | null) =>
+      productId
+        ? (plans.find((plan) =>
+            Object.values(plan.creemProductIds ?? {}).includes(productId),
+          ) ?? null)
+        : null,
+    [plans],
+  );
+
+  const resolveUpdateBehavior = useCallback(
+    (
+      update:
+        | {
+            kind: "plan-switch";
+            plan: UIPlanEntry;
+            productId?: string;
+            appPlanId?: string;
+            freePlanId?: string;
+            units?: number;
+          }
+        | { kind: "unit-update"; units: number },
+    ): ResolvedUpdateBehavior => {
+      const currentPlan = getPlanForProduct(localSubscriptionProductId);
+
+      if (update.kind === "plan-switch" && update.freePlanId) {
+        if (typeof freePlanUpdateBehavior !== "function") {
+          return resolveFreePlanUpdateBehavior(freePlanUpdateBehavior);
+        }
+        const intent: FreePlanUpdateBehaviorIntent = {
+          kind: "plan-switch",
+          target: "free-plan",
+          fromPlanId: activePlanId,
+          toPlanId: update.plan.planId,
+          fromPlan: currentPlan,
+          toPlan: update.plan,
+          fromProductId: localSubscriptionProductId,
+          toProductId: update.productId ?? null,
+          fromPrice: getProductPrice(localSubscriptionProductId),
+          toPrice: getProductPrice(update.productId),
+          currentUnits: localSubscribedUnits,
+          targetUnits: update.units,
+          freePlanId: update.freePlanId,
+          appPlanId: update.appPlanId,
+        };
+        return resolveFreePlanUpdateBehavior(freePlanUpdateBehavior(intent));
+      }
+
+      const applyTargetRules = (behavior: UpdateBehavior | undefined) =>
+        resolveTargetUpdateBehavior(behavior, {});
+
+      if (typeof updateBehavior !== "function") {
+        return applyTargetRules(updateBehavior);
+      }
+
+      const intent: UpdateBehaviorIntent =
+        update.kind === "plan-switch"
+          ? {
+              kind: "plan-switch",
+              target: "paid-plan",
+              fromPlanId: activePlanId,
+              toPlanId: update.plan.planId,
+              fromPlan: currentPlan,
+              toPlan: update.plan,
+              fromProductId: localSubscriptionProductId,
+              toProductId: update.productId ?? null,
+              fromPrice: getProductPrice(localSubscriptionProductId),
+              toPrice: getProductPrice(update.productId),
+              currentUnits: localSubscribedUnits,
+              targetUnits: update.units,
+            }
+          : {
+              kind: "unit-update",
+              target: "units",
+              fromPlanId: activePlanId,
+              fromPlan: currentPlan,
+              fromProductId: localSubscriptionProductId,
+              toProductId: localSubscriptionProductId,
+              fromPrice: getProductPrice(localSubscriptionProductId),
+              toPrice: getProductPrice(localSubscriptionProductId),
+              currentUnits: localSubscribedUnits,
+              targetUnits: update.units,
+            };
+      return applyTargetRules(updateBehavior(intent));
+    },
+    [
+      activePlanId,
+      getPlanForProduct,
+      getProductPrice,
+      freePlanUpdateBehavior,
+      localSubscribedUnits,
+      localSubscriptionProductId,
+      updateBehavior,
+    ],
+  );
 
   const startCheckout = useCallback(
     async (productId: string, checkoutUnits?: number) => {
-      if (onBeforeCheckout) {
-        const proceed = await onBeforeCheckout({
+      if (resolvedOnBeforeCheckout) {
+        const proceed = await resolvedOnBeforeCheckout({
           productId,
           units: checkoutUnits,
         });
@@ -273,17 +725,43 @@ export const SubscriptionRoot = ({
           { capture: true, once: true },
         );
         window.location.href = url;
-        window.location.href = url;
       } catch (error) {
         setActionError(
-          error instanceof Error ? error.message : "Checkout failed",
+          getConvexErrorMessage(
+            error,
+            resolvedI18n.labels.subscription.checkoutFailed,
+          ),
         );
       } finally {
         setIsActionLoading(false);
       }
     },
-    [client, checkoutLinkRef, successUrl, onBeforeCheckout],
+    [
+      client,
+      checkoutLinkRef,
+      successUrl,
+      resolvedOnBeforeCheckout,
+      resolvedI18n.labels.subscription.checkoutFailed,
+    ],
   );
+
+  // Pending checkout resume after auth
+  const pendingCheckoutHandled = useRef(false);
+  useEffect(() => {
+    if (!model?.user || pendingCheckoutHandled.current) return;
+    pendingCheckoutHandled.current = true;
+    const pending = pendingCheckout.load();
+    if (!pending) return;
+    if ((model.activeSubscriptions ?? []).length > 0) {
+      pendingCheckout.clear();
+      return;
+    }
+    const resumeCheckout = setTimeout(() => {
+      void startCheckout(pending.productId, pending.units);
+    }, 0);
+    return () => clearTimeout(resumeCheckout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model?.user]);
 
   const handlePricingCheckout = useCallback(
     async (payload: {
@@ -296,35 +774,126 @@ export const SubscriptionRoot = ({
     [startCheckout],
   );
 
+  const activateAppPlan = useCallback(
+    async (appPlanId: string) => {
+      setActionError(null);
+      try {
+        if (!activateAppPlanRef) return;
+        await client.mutation(activateAppPlanRef, {
+          planId: appPlanId,
+        });
+      } catch (cause) {
+        setActionError(
+          getConvexErrorMessage(
+            cause,
+            resolvedI18n.labels.subscription.switchFailed,
+          ),
+        );
+      }
+    },
+    [activateAppPlanRef, client, resolvedI18n.labels.subscription.switchFailed],
+  );
+
   const requestSwitchPlan = useCallback(
-    (payload: { plan: UIPlanEntry; productId: string; units?: number }) => {
+    async (payload: {
+      plan: UIPlanEntry;
+      productId?: string;
+      appPlanId?: string;
+      freePlanId?: string;
+      units?: number;
+    }) => {
+      // Consent gate: onBeforePlanChange
+      if (resolvedOnBeforePlanChange) {
+        const proceed = await resolvedOnBeforePlanChange({
+          fromPlanId: activePlanId,
+          toPlanId: payload.plan.planId,
+          productId: payload.productId,
+          appPlanId: payload.appPlanId,
+          freePlanId: payload.freePlanId,
+          units: payload.units,
+        });
+        if (!proceed) return;
+      }
+      const appPlanId = payload.appPlanId ?? payload.freePlanId;
+      // Consent gate: onBeforePlanActivation
+      if (resolvedOnBeforePlanActivation && appPlanId) {
+        const proceed = await resolvedOnBeforePlanActivation({
+          planId: appPlanId,
+        });
+        if (!proceed) return;
+      }
+      if (appPlanId && !matchedSubscription?.id && activateAppPlanRef) {
+        await activateAppPlan(appPlanId);
+        return;
+      }
       setPendingUpdate({ kind: "plan-switch", ...payload });
       setUpdateDialogOpen(true);
     },
-    [],
+    [
+      activateAppPlan,
+      activateAppPlanRef,
+      activePlanId,
+      matchedSubscription?.id,
+      resolvedOnBeforePlanChange,
+      resolvedOnBeforePlanActivation,
+    ],
   );
 
   const confirmUpdate = useCallback(async () => {
-    if (!updateRef || !pendingUpdate) return;
+    if (!pendingUpdate) return;
     const update = pendingUpdate;
+    const selectedUpdateBehavior = resolveUpdateBehavior(update);
     const subId = matchedSubscription?.id;
     setUpdateDialogOpen(false);
     setPendingUpdate(null);
     setActionError(null);
     try {
       if (update.kind === "plan-switch") {
+        const appPlanId = update.appPlanId ?? update.freePlanId;
+        if (appPlanId && !subId && activateAppPlanRef) {
+          await activateAppPlan(appPlanId);
+          return;
+        }
+        if (!updateRef) return;
         await client.mutation(
           updateRef,
           {
-            productId: update.productId,
+            ...(update.productId ? { productId: update.productId } : {}),
+            ...(update.freePlanId ? { freePlanId: update.freePlanId } : {}),
             ...(subId ? { subscriptionId: subId } : {}),
-            updateBehavior,
+            updateBehavior: selectedUpdateBehavior,
           },
           {
             optimisticUpdate: (store) => {
               const current = store.getQuery(billingUiModelRef, {});
               if (current) {
                 const m = current as ConnectedBillingModel;
+                if (selectedUpdateBehavior === "period-end") {
+                  store.setQuery(
+                    billingUiModelRef,
+                    {},
+                    {
+                      ...m,
+                      scheduledSubscriptionUpdates: [
+                        ...(m.scheduledSubscriptionUpdates ?? []).filter(
+                          (scheduled) => scheduled.subscriptionId !== subId,
+                        ),
+                        {
+                          entityId: "",
+                          subscriptionId: subId ?? "",
+                          targetProductId: update.productId,
+                          targetPlanId: update.appPlanId ?? update.freePlanId,
+                          effectiveAt:
+                            matchedSubscription?.currentPeriodEnd ?? "",
+                          status: "pending",
+                          createdAt: new Date().toISOString(),
+                          updatedAt: new Date().toISOString(),
+                        },
+                      ],
+                    },
+                  );
+                  return;
+                }
                 store.setQuery(
                   billingUiModelRef,
                   {},
@@ -333,7 +902,7 @@ export const SubscriptionRoot = ({
                     activeSubscriptions: (m.activeSubscriptions ?? []).map(
                       (s) =>
                         ownProductIds.has(s.productId)
-                          ? { ...s, productId: update.productId }
+                          ? { ...s, productId: update.productId ?? s.productId }
                           : s,
                     ),
                   },
@@ -343,18 +912,44 @@ export const SubscriptionRoot = ({
           },
         );
       } else {
+        if (!updateRef) return;
         await client.mutation(
           updateRef,
           {
             units: update.units,
             ...(subId ? { subscriptionId: subId } : {}),
-            updateBehavior,
+            updateBehavior: selectedUpdateBehavior,
           },
           {
             optimisticUpdate: (store) => {
               const current = store.getQuery(billingUiModelRef, {});
               if (current) {
                 const m = current as ConnectedBillingModel;
+                if (selectedUpdateBehavior === "period-end") {
+                  store.setQuery(
+                    billingUiModelRef,
+                    {},
+                    {
+                      ...m,
+                      scheduledSubscriptionUpdates: [
+                        ...(m.scheduledSubscriptionUpdates ?? []).filter(
+                          (scheduled) => scheduled.subscriptionId !== subId,
+                        ),
+                        {
+                          entityId: "",
+                          subscriptionId: subId ?? "",
+                          targetUnits: update.units,
+                          effectiveAt:
+                            matchedSubscription?.currentPeriodEnd ?? "",
+                          status: "pending",
+                          createdAt: new Date().toISOString(),
+                          updatedAt: new Date().toISOString(),
+                        },
+                      ],
+                    },
+                  );
+                  return;
+                }
                 store.setQuery(
                   billingUiModelRef,
                   {},
@@ -362,7 +957,7 @@ export const SubscriptionRoot = ({
                     ...m,
                     activeSubscriptions: (m.activeSubscriptions ?? []).map(
                       (s) =>
-                        s.id === subId ? { ...s, seats: update.units } : s,
+                        s.id === subId ? { ...s, units: update.units } : s,
                     ),
                   },
                 );
@@ -373,30 +968,36 @@ export const SubscriptionRoot = ({
       }
     } catch (error) {
       setActionError(
-        error instanceof Error
-          ? error.message
-          : update.kind === "plan-switch"
-            ? "Switch failed"
-            : "Seat update failed",
+        getConvexErrorMessage(
+          error,
+          update.kind === "plan-switch"
+            ? resolvedI18n.labels.subscription.switchFailed
+            : resolvedI18n.labels.subscription.unitUpdateFailed,
+        ),
       );
     }
   }, [
     updateRef,
+    activateAppPlanRef,
+    activateAppPlan,
     pendingUpdate,
     matchedSubscription,
     client,
     billingUiModelRef,
     ownProductIds,
-    updateBehavior,
+    resolveUpdateBehavior,
+    resolvedI18n.labels.subscription.switchFailed,
+    resolvedI18n.labels.subscription.unitUpdateFailed,
   ]);
 
-  const handleUpdateSeats = useCallback((payload: { units: number }) => {
-    setPendingUpdate({ kind: "seat-update", units: payload.units });
+  const handleUpdateUnits = useCallback((payload: { units: number }) => {
+    setPendingUpdate({ kind: "unit-update", units: payload.units });
     setUpdateDialogOpen(true);
   }, []);
 
   const updateSummary = useMemo(() => {
     if (!pendingUpdate) return null;
+    const selectedUpdateBehavior = resolveUpdateBehavior(pendingUpdate);
 
     if (pendingUpdate.kind === "plan-switch") {
       const currentPlan = plans.find((p) => {
@@ -406,63 +1007,167 @@ export const SubscriptionRoot = ({
           pids.includes(localSubscriptionProductId)
         );
       });
-      const currentTitle = currentPlan?.title ?? "Current plan";
-      const currentPrice = formatPriceWithInterval(
-        localSubscriptionProductId ?? undefined,
-        allProducts,
-      );
-      const newPrice = formatPriceWithInterval(
-        pendingUpdate.productId,
-        allProducts,
-      );
+      const currentTitle =
+        currentPlan?.title ?? resolvedI18n.labels.subscription.currentPlan;
+      const switchUnits =
+        pendingUpdate.units ?? localSubscribedUnits ?? units ?? 1;
+      const useUnitBreakdown =
+        currentPlan?.pricingModel === "unit" ||
+        pendingUpdate.plan.pricingModel === "unit";
+      const currentBreakdown = useUnitBreakdown
+        ? formatUnitPriceBreakdown(
+            localSubscriptionProductId ?? undefined,
+            allProducts,
+            switchUnits,
+            resolvedI18n.labels,
+            resolvedI18n.formatCurrency,
+          )
+        : null;
+      const newBreakdown = useUnitBreakdown
+        ? pendingUpdate.productId
+          ? formatUnitPriceBreakdown(
+              pendingUpdate.productId,
+              allProducts,
+              switchUnits,
+              resolvedI18n.labels,
+              resolvedI18n.formatCurrency,
+            )
+          : null
+        : null;
+      const currentPrice =
+        currentBreakdown?.total ??
+        formatPriceWithInterval(
+          localSubscriptionProductId ?? undefined,
+          allProducts,
+          resolvedI18n.labels,
+          resolvedI18n.formatCurrency,
+        );
+      const newPrice =
+        newBreakdown?.total ??
+        (pendingUpdate.productId
+          ? formatPriceWithInterval(
+              pendingUpdate.productId,
+              allProducts,
+              resolvedI18n.labels,
+              resolvedI18n.formatCurrency,
+            )
+          : null);
+      const currentPriceAmount = getProductPrice(localSubscriptionProductId);
+      const newPriceAmount = getProductPrice(pendingUpdate.productId);
+      const currentComparisonPrice =
+        currentPriceAmount != null && useUnitBreakdown
+          ? currentPriceAmount * switchUnits
+          : currentPriceAmount;
+      const newComparisonPrice =
+        newPriceAmount != null && useUnitBreakdown
+          ? newPriceAmount * switchUnits
+          : newPriceAmount;
 
       return buildUpdateSummary({
         kind: "plan-switch",
-        updateBehavior,
+        updateBehavior: selectedUpdateBehavior,
         currentLabel: currentPrice
           ? `${currentTitle} \u00b7 ${currentPrice}`
           : currentTitle,
         newLabel: newPrice
-          ? `${pendingUpdate.plan.title ?? "New plan"} \u00b7 ${newPrice}`
-          : (pendingUpdate.plan.title ?? "New plan"),
+          ? `${pendingUpdate.plan.title ?? resolvedI18n.labels.subscription.newPlan} \u00b7 ${newPrice}`
+          : (pendingUpdate.plan.title ??
+            resolvedI18n.labels.subscription.newPlan),
+        currentPrice: currentComparisonPrice,
+        newPrice: newComparisonPrice,
+        currentCaption: currentBreakdown?.calculation ?? null,
+        newCaption: newBreakdown?.calculation ?? null,
         currentPeriodEnd: matchedSubscription?.currentPeriodEnd,
         isTrialing: matchedSubscription?.status === "trialing",
         trialEnd: matchedSubscription?.trialEnd,
+        labels: resolvedI18n.labels,
+        formatDate: resolvedI18n.formatDate,
       });
     }
 
-    const currentSeats = localSubscribedSeats ?? 1;
-    const currentPrice = formatSeatPrice(
+    const currentUnits = localSubscribedUnits ?? 1;
+    const currentPrice = formatUnitPrice(
       localSubscriptionProductId ?? undefined,
       allProducts,
-      currentSeats,
+      currentUnits,
+      resolvedI18n.labels,
+      resolvedI18n.formatCurrency,
     );
-    const newPrice = formatSeatPrice(
+    const newPrice = formatUnitPrice(
       localSubscriptionProductId ?? undefined,
       allProducts,
       pendingUpdate.units,
+      resolvedI18n.labels,
+      resolvedI18n.formatCurrency,
     );
+    const unitPriceAmount = getProductPrice(localSubscriptionProductId);
 
     return buildUpdateSummary({
-      kind: "seat-update",
-      updateBehavior,
+      kind: "unit-update",
+      updateBehavior: selectedUpdateBehavior,
       currentLabel:
-        currentPrice ?? `${currentSeats} seat${currentSeats !== 1 ? "s" : ""}`,
+        currentPrice ??
+        resolvedI18n.labels.subscription.unitCount(currentUnits),
       newLabel:
         newPrice ??
-        `${pendingUpdate.units} seat${pendingUpdate.units !== 1 ? "s" : ""}`,
+        resolvedI18n.labels.subscription.unitCount(pendingUpdate.units),
+      currentPrice:
+        unitPriceAmount != null ? unitPriceAmount * currentUnits : null,
+      newPrice:
+        unitPriceAmount != null ? unitPriceAmount * pendingUpdate.units : null,
       currentPeriodEnd: matchedSubscription?.currentPeriodEnd,
       isTrialing: matchedSubscription?.status === "trialing",
       trialEnd: matchedSubscription?.trialEnd,
+      labels: resolvedI18n.labels,
+      formatDate: resolvedI18n.formatDate,
     });
   }, [
     pendingUpdate,
     plans,
     localSubscriptionProductId,
     allProducts,
-    localSubscribedSeats,
-    updateBehavior,
+    localSubscribedUnits,
+    units,
+    getProductPrice,
+    resolveUpdateBehavior,
     matchedSubscription,
+    resolvedI18n,
+  ]);
+
+  const scheduledUpdateLabel = useMemo(() => {
+    if (!localScheduledUpdate) return null;
+    if (localScheduledUpdate.targetProductId) {
+      const targetPlan = getPlanForProduct(
+        localScheduledUpdate.targetProductId,
+      );
+      const price = formatPriceWithInterval(
+        localScheduledUpdate.targetProductId,
+        allProducts,
+        resolvedI18n.labels,
+        resolvedI18n.formatCurrency,
+      );
+      const title =
+        targetPlan?.title ?? resolvedI18n.labels.subscription.newPlan;
+      return price ? `${title} \u00b7 ${price}` : title;
+    }
+    if (localScheduledUpdate.targetPlanId) {
+      const targetPlan = plans.find(
+        (plan) => plan.planId === localScheduledUpdate.targetPlanId,
+      );
+      return targetPlan?.title ?? localScheduledUpdate.targetPlanId;
+    }
+    if (localScheduledUpdate.targetUnits !== undefined) {
+      return resolvedI18n.labels.subscription.unitCount(
+        localScheduledUpdate.targetUnits,
+      );
+    }
+    return null;
+  }, [
+    allProducts,
+    getPlanForProduct,
+    localScheduledUpdate,
+    plans,
+    resolvedI18n,
   ]);
 
   const confirmCancelSubscription = useCallback(async () => {
@@ -498,7 +1203,12 @@ export const SubscriptionRoot = ({
         },
       );
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Cancel failed");
+      setActionError(
+        getConvexErrorMessage(
+          error,
+          resolvedI18n.labels.subscription.cancelFailed,
+        ),
+      );
     }
   }, [
     cancelRef,
@@ -506,6 +1216,7 @@ export const SubscriptionRoot = ({
     client,
     billingUiModelRef,
     ownProductIds,
+    resolvedI18n.labels.subscription.cancelFailed,
   ]);
 
   const resumeSubscription = useCallback(async () => {
@@ -540,7 +1251,12 @@ export const SubscriptionRoot = ({
         },
       );
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Resume failed");
+      setActionError(
+        getConvexErrorMessage(
+          error,
+          resolvedI18n.labels.subscription.resumeFailed,
+        ),
+      );
     }
   }, [
     resumeRef,
@@ -548,82 +1264,258 @@ export const SubscriptionRoot = ({
     client,
     billingUiModelRef,
     ownProductIds,
+    resolvedI18n.labels.subscription.resumeFailed,
+  ]);
+
+  const undoScheduledUpdate = useCallback(async () => {
+    if (!cancelScheduledUpdateRef) return;
+    const subId = matchedSubscription?.id;
+    setActionError(null);
+    try {
+      await client.mutation(
+        cancelScheduledUpdateRef,
+        {
+          ...(subId ? { subscriptionId: subId } : {}),
+        },
+        {
+          optimisticUpdate: (store) => {
+            const current = store.getQuery(billingUiModelRef, {});
+            if (current) {
+              const m = current as ConnectedBillingModel;
+              store.setQuery(
+                billingUiModelRef,
+                {},
+                {
+                  ...m,
+                  scheduledSubscriptionUpdates: (
+                    m.scheduledSubscriptionUpdates ?? []
+                  ).filter((update) => update.subscriptionId !== subId),
+                  activeSubscriptions: (m.activeSubscriptions ?? []).map((s) =>
+                    s.id === subId ? { ...s, cancelAtPeriodEnd: false } : s,
+                  ),
+                },
+              );
+            }
+          },
+        },
+      );
+    } catch (error) {
+      setActionError(
+        getConvexErrorMessage(
+          error,
+          resolvedI18n.labels.subscription.resumeFailed,
+        ),
+      );
+    }
+  }, [
+    billingUiModelRef,
+    cancelScheduledUpdateRef,
+    client,
+    matchedSubscription,
+    resolvedI18n.labels.subscription.resumeFailed,
   ]);
 
   const openCancelDialog = useCallback(() => {
     setCancelDialogOpen(true);
   }, []);
 
+  const contextValue = useMemo(
+    () => ({
+      registerPlan,
+      getPlan: (planId: string) =>
+        plans.find((candidate) => candidate.planId === planId),
+      isPlanVisible: (planId: string) =>
+        visiblePlans.some((candidate) => candidate.planId === planId),
+      selectedCycle: effectiveCycle,
+      activePlanId,
+      products: allProducts,
+      subscriptionProductId: localSubscriptionProductId,
+      subscriptionStatus: localSubscriptionState,
+      subscriptionTrialEnd: matchedSubscription?.trialEnd ?? null,
+      scheduledUpdate: localScheduledUpdate,
+      scheduledEffectiveDate: formattedScheduledEffectiveDate,
+      subscribedUnits: localSubscribedUnits,
+      units,
+      showUnitPicker,
+      isGroupSubscribed: ownsActiveSubscription,
+      disableCheckout: !canCheckout,
+      disableSwitch: !canChange,
+      disableUnits: !canUpdateUnits,
+      unstyled,
+      labels: resolvedI18n.labels,
+      cycleBadges,
+      formatCurrency: resolvedI18n.formatCurrency,
+      formatDate: resolvedI18n.formatDate,
+      checkout: handlePricingCheckout,
+      switchPlan:
+        (updateRef || activateAppPlanRef) && canChange
+          ? requestSwitchPlan
+          : undefined,
+      updateUnits: updateRef && canUpdateUnits ? handleUpdateUnits : undefined,
+      cancelSubscription:
+        cancelRef &&
+        canCancel &&
+        ownsActiveSubscription &&
+        !localCancelAtPeriodEnd
+          ? openCancelDialog
+          : undefined,
+      groupItems,
+      activeGroupId,
+      setGroup: handleGroupChange,
+      availableCycles,
+      setCycle: handleCycleChange,
+    }),
+    [
+      registerPlan,
+      plans,
+      visiblePlans,
+      effectiveCycle,
+      activePlanId,
+      allProducts,
+      localSubscriptionProductId,
+      localSubscriptionState,
+      localScheduledUpdate,
+      formattedScheduledEffectiveDate,
+      matchedSubscription,
+      localSubscribedUnits,
+      units,
+      showUnitPicker,
+      ownsActiveSubscription,
+      canCheckout,
+      canChange,
+      canUpdateUnits,
+      unstyled,
+      resolvedI18n,
+      cycleBadges,
+      handlePricingCheckout,
+      updateRef,
+      activateAppPlanRef,
+      requestSwitchPlan,
+      handleUpdateUnits,
+      cancelRef,
+      canCancel,
+      localCancelAtPeriodEnd,
+      openCancelDialog,
+      groupItems,
+      activeGroupId,
+      handleGroupChange,
+      availableCycles,
+      handleCycleChange,
+    ],
+  );
+
   return (
     <SubscriptionContext.Provider value={contextValue}>
-      <div className="hidden" aria-hidden="true">
-        {children}
-      </div>
-
-      <section className={`space-y-4 ${className}`}>
+      <section
+        className={unstyled ? className : `creem-base:space-y-4 ${className}`}
+      >
         {actionError && (
-          <div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div
+            className={
+              unstyled
+                ? ""
+                : "creem-base:rounded-lg creem-base:border creem-base:border-red-300 creem-base:bg-red-50 creem-base:px-3 creem-base:py-2 creem-base:text-sm creem-base:text-red-700"
+            }
+          >
             {actionError}
           </div>
         )}
 
         {!model ? (
-          <p className="text-sm text-zinc-500">Loading billing model…</p>
+          <p
+            className={
+              unstyled ? "" : "creem-base:text-sm creem-base:text-zinc-500"
+            }
+          >
+            {resolvedI18n.labels.subscription.loadingBillingModel}
+          </p>
         ) : (
           <>
             {ownsActiveSubscription && snapshot && (
               <ScheduledChangeBanner
-                snapshot={{
-                  ...snapshot,
-                  metadata: {
-                    ...snapshot.metadata,
-                    cancelAtPeriodEnd: localCancelAtPeriodEnd,
-                    currentPeriodEnd: localCurrentPeriodEnd,
-                  },
-                }}
+                cancelAtPeriodEnd={localCancelAtPeriodEnd}
+                currentPeriodEnd={localCurrentPeriodEnd}
+                scheduledUpdate={localScheduledUpdate}
                 isLoading={isActionLoading}
+                scheduledUpdateLabel={scheduledUpdateLabel}
+                onUndoUpdate={
+                  cancelScheduledUpdateRef && canResume
+                    ? undoScheduledUpdate
+                    : undefined
+                }
                 onResume={
                   resumeRef && canResume ? resumeSubscription : undefined
                 }
+                labels={resolvedI18n.labels}
+                formatDate={resolvedI18n.formatDate}
               />
             )}
-            <PaymentWarningBanner snapshot={snapshot} />
+            <PaymentWarningBanner labels={resolvedI18n.labels} />
 
-            <PricingSection
-              plans={plans}
-              snapshot={snapshot ? { ...snapshot, activePlanId } : null}
-              selectedCycle={selectedCycle}
-              products={allProducts}
-              subscriptionProductId={localSubscriptionProductId}
-              subscriptionStatus={localSubscriptionState}
-              subscriptionTrialEnd={matchedSubscription?.trialEnd ?? null}
-              units={units}
-              showSeatPicker={showSeatPicker}
-              twoColumnLayout={twoColumnLayout}
-              subscribedSeats={localSubscribedSeats}
-              isGroupSubscribed={ownsActiveSubscription}
-              onCycleChange={setSelectedCycle}
-              disableCheckout={!canCheckout}
-              disableSwitch={!canChange}
-              disableSeats={!canUpdateSeats}
-              onCheckout={canCheckout ? handlePricingCheckout : undefined}
-              onSwitchPlan={
-                updateRef && canChange ? requestSwitchPlan : undefined
-              }
-              onUpdateSeats={
-                updateRef && canUpdateSeats ? handleUpdateSeats : undefined
-              }
-              onCancelSubscription={
-                cancelRef &&
-                canCancel &&
-                ownsActiveSubscription &&
-                !localCancelAtPeriodEnd
-                  ? openCancelDialog
-                  : undefined
-              }
-            />
+            {groupSelector === "auto" && groupItems.length > 1 && (
+              <div
+                className={
+                  unstyled ? "" : "creem-base:flex creem-base:justify-center"
+                }
+              >
+                <SegmentGroup
+                  items={groupItems}
+                  value={activeGroupId}
+                  unstyled={unstyled}
+                  onValueChange={handleGroupChange}
+                />
+              </div>
+            )}
 
-            <div className="flex flex-wrap items-center gap-3">{children}</div>
+            {children ? (
+              children
+            ) : (
+              <PricingSection
+                plans={visiblePlans}
+                activePlanId={activePlanId}
+                selectedCycle={effectiveCycle}
+                products={allProducts}
+                subscriptionProductId={localSubscriptionProductId}
+                subscriptionStatus={localSubscriptionState}
+                subscriptionTrialEnd={matchedSubscription?.trialEnd ?? null}
+                scheduledUpdate={localScheduledUpdate}
+                scheduledEffectiveDate={formattedScheduledEffectiveDate}
+                units={units}
+                showUnitPicker={showUnitPicker}
+                showCycleToggle={intervalSelector === "auto"}
+                cycleBadges={cycleBadges}
+                columns={columns}
+                subscribedUnits={localSubscribedUnits}
+                isGroupSubscribed={ownsActiveSubscription}
+                onCycleChange={
+                  intervalSelector === "external"
+                    ? undefined
+                    : handleCycleChange
+                }
+                disableCheckout={!canCheckout}
+                disableSwitch={!canChange}
+                disableUnits={!canUpdateUnits}
+                onCheckout={canCheckout ? handlePricingCheckout : undefined}
+                onSwitchPlan={
+                  (updateRef || activateAppPlanRef) && canChange
+                    ? requestSwitchPlan
+                    : undefined
+                }
+                onUpdateUnits={
+                  updateRef && canUpdateUnits ? handleUpdateUnits : undefined
+                }
+                onCancelSubscription={
+                  cancelRef &&
+                  canCancel &&
+                  ownsActiveSubscription &&
+                  !localCancelAtPeriodEnd
+                    ? openCancelDialog
+                    : undefined
+                }
+                labels={resolvedI18n.labels}
+                formatCurrency={resolvedI18n.formatCurrency}
+              />
+            )}
 
             {/* Cancel Dialog */}
             <Dialog.Root
@@ -638,7 +1530,7 @@ export const SubscriptionRoot = ({
                   <Dialog.Content className="dialog-content">
                     <Dialog.CloseTrigger
                       className="icon-button-ghost-sm absolute right-2 top-2"
-                      aria-label="Close dialog"
+                      aria-label={resolvedI18n.labels.accessibility.closeDialog}
                     >
                       <svg
                         aria-hidden="true"
@@ -656,12 +1548,10 @@ export const SubscriptionRoot = ({
                       </svg>
                     </Dialog.CloseTrigger>
                     <Dialog.Title className="dialog-title">
-                      Cancel subscription?
+                      {resolvedI18n.labels.subscription.dialogs.cancelTitle}
                     </Dialog.Title>
                     <Dialog.Description className="dialog-description">
-                      Are you sure you want to cancel your subscription? You
-                      will continue to have access until the end of your current
-                      billing period.
+                      {cancelDescription}
                     </Dialog.Description>
                     <div className="dialog-actions">
                       <button
@@ -669,10 +1559,13 @@ export const SubscriptionRoot = ({
                         className="dialog-action-danger"
                         onClick={confirmCancelSubscription}
                       >
-                        Yes, cancel
+                        {resolvedI18n.labels.subscription.dialogs.confirmCancel}
                       </button>
                       <Dialog.CloseTrigger className="button-faded h-8 w-full">
-                        Keep subscription
+                        {
+                          resolvedI18n.labels.subscription.dialogs
+                            .keepSubscription
+                        }
                       </Dialog.CloseTrigger>
                     </div>
                   </Dialog.Content>
@@ -694,7 +1587,7 @@ export const SubscriptionRoot = ({
                   <Dialog.Content className="dialog-content">
                     <Dialog.CloseTrigger
                       className="icon-button-ghost-sm absolute right-2 top-2"
-                      aria-label="Close dialog"
+                      aria-label={resolvedI18n.labels.accessibility.closeDialog}
                     >
                       <svg
                         aria-hidden="true"
@@ -720,12 +1613,22 @@ export const SubscriptionRoot = ({
                           <span className="label-m text-foreground-muted">
                             {updateSummary.currentLabel}
                           </span>
+                          {updateSummary.currentCaption && (
+                            <span className="body-s text-foreground-placeholder">
+                              {updateSummary.currentCaption}
+                            </span>
+                          )}
                           <span className="body-s text-foreground-placeholder">
                             {"\u2192"}
                           </span>
                           <span className="label-m text-foreground-default">
                             {updateSummary.newLabel}
                           </span>
+                          {updateSummary.newCaption && (
+                            <span className="body-s text-foreground-placeholder">
+                              {updateSummary.newCaption}
+                            </span>
+                          )}
                         </div>
                         <Dialog.Description className="dialog-description">
                           {updateSummary.description}
@@ -741,10 +1644,11 @@ export const SubscriptionRoot = ({
                         className="button-filled h-8 w-full"
                         onClick={confirmUpdate}
                       >
-                        {updateSummary?.confirmLabel ?? "Confirm"}
+                        {updateSummary?.confirmLabel ??
+                          resolvedI18n.labels.common.confirm}
                       </button>
                       <Dialog.CloseTrigger className="button-faded h-8 w-full">
-                        Cancel
+                        {resolvedI18n.labels.common.cancel}
                       </Dialog.CloseTrigger>
                     </div>
                   </Dialog.Content>

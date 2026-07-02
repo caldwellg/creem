@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from "react";
 import { CheckoutButton } from "./CheckoutButton.js";
+import { defaultBillingLabels, type BillingLabels } from "../../core/i18n.js";
 
 export const OneTimeCheckoutButton = ({
   productId,
@@ -7,6 +8,7 @@ export const OneTimeCheckoutButton = ({
   disabled = false,
   className = "",
   onCheckout,
+  labels = defaultBillingLabels,
   children,
 }: PropsWithChildren<{
   productId: string;
@@ -14,6 +16,7 @@ export const OneTimeCheckoutButton = ({
   disabled?: boolean;
   className?: string;
   onCheckout?: (payload: { productId: string }) => Promise<void> | void;
+  labels?: BillingLabels;
 }>) => (
   <CheckoutButton
     productId={productId}
@@ -21,7 +24,8 @@ export const OneTimeCheckoutButton = ({
     disabled={disabled}
     className={className}
     onCheckout={onCheckout}
+    labels={labels}
   >
-    {children ?? "Buy now"}
+    {children ?? labels.checkout.buyNow}
   </CheckoutButton>
 );

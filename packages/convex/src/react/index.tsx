@@ -18,30 +18,87 @@ export { PricingSection } from "./primitives/PricingSection.js";
 export { BillingGate } from "./primitives/BillingGate.js";
 export { ScheduledChangeBanner } from "./primitives/ScheduledChangeBanner.js";
 export { PaymentWarningBanner } from "./primitives/PaymentWarningBanner.js";
+export { PaymentRecoveryBanner } from "./primitives/PaymentRecoveryBanner.js";
+export { PaymentRecoveryButton } from "./primitives/PaymentRecoveryButton.js";
 export { TrialLimitBanner } from "./primitives/TrialLimitBanner.js";
 export { OneTimeCheckoutButton } from "./primitives/OneTimeCheckoutButton.js";
 export { OneTimePaymentStatusBadge } from "./primitives/OneTimePaymentStatusBadge.js";
 export { CheckoutSuccessSummary } from "./primitives/CheckoutSuccessSummary.js";
-export { Subscription, Product, BillingPortal } from "./widgets/index.js";
+export { CreemConvexProvider, useCreemConvex } from "./CreemConvexProvider.js";
+export type { CreemConvexContextValue } from "./CreemConvexProvider.js";
+export {
+  Subscription,
+  Product,
+  Credits,
+  BillingPortal,
+  BillingHistory,
+  useSubscriptionItem,
+  useCredits,
+} from "./widgets/index.js";
 export type {
-  BillingSnapshot,
   CheckoutSuccessParams,
   OneTimePaymentStatus,
   RecurringCycle,
 } from "../core/types.js";
+export { defineBillingCatalog, plansOf } from "../core/catalog.js";
 export {
   hasBillingAction,
-  isEnterpriseBilling,
+  isEmptyBilling,
   isOneTimeBilling,
   isTerminalPaymentStatus,
-  shouldShowBillingCycleToggle,
+  derivePaymentRecoveryState,
+  selectBaseSubscription,
+  selectActiveAddOns,
+  selectOwnedProductIds,
+  resolveBasePlanId,
 } from "../core/selectors.js";
+export { evaluateUsageLimits } from "../core/usageLimits.js";
+export { resolveBillingSnapshot } from "../core/resolver.js";
+export { getConvexErrorMessage } from "../core/convexError.js";
+export { createCreemReact } from "./createCreemReact.js";
+export type {
+  CreateCreemReactOptions,
+  CreemReactBinding,
+} from "./createCreemReact.js";
 export type {
   BillingPermissions,
   CheckoutIntent,
+  PlanChangeIntent,
   ConnectedBillingApi,
   ConnectedBillingModel,
+  ConnectedTransaction,
+  ConnectedTransactionList,
   ProductType,
   SubscriptionPlanType,
   Transition,
 } from "./widgets/types.js";
+export type {
+  PlanId,
+  PaymentRecoveryState,
+  UsageLimitEntry,
+  UsageLimitResult,
+  BillingSnapshotSubscription,
+  BillingSnapshotOrder,
+  BillingSnapshot,
+  PlanChangeIntent as PlanChangeIntentCore,
+  FreePlanUpdateBehavior,
+  FreePlanUpdateBehaviorIntent,
+  FreePlanUpdateBehaviorSetting,
+  PaidSubscriptionUpdateBehavior,
+  ResolvedUpdateBehavior,
+  UpdateBehavior,
+  UpdateBehaviorIntent,
+  UpdateBehaviorSetting,
+} from "../core/types.js";
+export type {
+  BillingI18n,
+  BillingLabels,
+  BillingLabelOverrides,
+  BillingCurrencyFormatInput,
+  BillingDateFormatInput,
+} from "../core/i18n.js";
+export type {
+  BillingContextValue,
+  BillingProviderConfig,
+} from "../core/context.js";
+export type { BillingSnapshotResolverInput } from "../core/resolver.js";

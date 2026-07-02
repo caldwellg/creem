@@ -1,84 +1,235 @@
 <script lang="ts">
-  import { setContext, untrack } from "svelte";
-  import { SvelteSet } from "svelte/reactivity";
+  import { getContext, setContext, untrack } from "svelte";
+  import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
   import { Dialog } from "@ark-ui/svelte/dialog";
   import { Portal } from "@ark-ui/svelte/portal";
 
   import PricingSection from "../primitives/PricingSection.svelte";
+  import SegmentGroup from "../primitives/SegmentGroup.svelte";
   import PaymentWarningBanner from "../primitives/PaymentWarningBanner.svelte";
   import ScheduledChangeBanner from "../primitives/ScheduledChangeBanner.svelte";
 
-  import { useConvexClient, useQuery } from "@mmailaender/convex-svelte";
+  import { useConvexClient, useQuery } from "convex-svelte";
   import {
     SUBSCRIPTION_CONTEXT_KEY,
     type SubscriptionContextValue,
   } from "./subscriptionContext.js";
+  import {
+    CREEM_CONVEX_CONTEXT_KEY,
+    type CreemConvexContextValue,
+  } from "../creemConvexContext.js";
   import { pendingCheckout } from "../../core/pendingCheckout.js";
+  import { getConvexErrorMessage } from "../../core/convexError.js";
 
-  import type { UIPlanEntry, RecurringCycle, UpdateBehavior } from "../../core/types.js";
-  import { buildUpdateSummary } from "../../core/subscriptionUpdate.js";
-  import { formatPriceWithInterval, formatSeatPrice } from "../primitives/shared.js";
+  import type {
+    PlanCatalog,
+    PlanCatalogEntry,
+    UIPlanEntry,
+    RecurringCycle,
+    FreePlanUpdateBehaviorIntent,
+    FreePlanUpdateBehaviorSetting,
+    ResolvedUpdateBehavior,
+    SupportedRecurringCycle,
+    UpdateBehavior,
+    UpdateBehaviorIntent,
+    UpdateBehaviorSetting,
+  } from "../../core/types.js";
+  import {
+    mergeBillingLabels,
+    resolveBillingI18n,
+    type BillingI18n,
+    type BillingLabelOverrides,
+  } from "../../core/i18n.js";
+  import {
+    findPlanById,
+    normalizePlanCatalog,
+    shouldShowPlan,
+  } from "../../core/catalog.js";
+  import {
+    buildUpdateSummary,
+    resolveFreePlanUpdateBehavior,
+    resolveTargetUpdateBehavior,
+  } from "../../core/subscriptionUpdate.js";
+  import {
+    formatPriceWithInterval,
+    formatUnitPrice,
+    formatUnitPriceBreakdown,
+  } from "../../core/display.js";
   import type {
     BillingPermissions,
     CheckoutIntent,
-    ConnectedBillingApi,
+    PlanChangeIntent,
     ConnectedBillingModel,
+    SubscriptionGroupRegistration,
     SubscriptionPlanRegistration,
   } from "./types.js";
 
   interface Props {
-    api: ConnectedBillingApi;
+    /** Optional local catalog override. Defaults to the catalog from `CreemConvexProvider`. */
+    catalog?: PlanCatalog;
+    /** Catalog plan IDs to render with the default pricing layout. */
+    plans?: readonly string[];
+    /** Grouped plan definitions used to render a group selector and group-specific plan sets. */
+    groups?: SubscriptionGroupRegistration[];
+    /** Initial uncontrolled group value. */
+    defaultGroup?: string;
+    /** Controlled group value. Pair with `onGroupChange`. */
+    group?: string;
+    /** Called whenever the active group changes. */
+    onGroupChange?: (group: string) => void;
+    /** Group selector placement: automatic, hidden, or rendered externally via `Subscription.GroupSelector`. */
+    groupSelector?: "auto" | "hidden" | "external";
+    /** Initial billing cycle. Defaults to provider `defaultCycle`, then `every-month`. */
+    defaultCycle?: RecurringCycle;
+    /** Controlled billing cycle. Pair with `onCycleChange`. */
+    cycle?: RecurringCycle;
+    /** Called whenever the active billing cycle changes. */
+    onCycleChange?: (cycle: RecurringCycle) => void;
+    /** Interval selector placement: automatic, hidden, or rendered externally via `Subscription.IntervalSelector`. */
+    intervalSelector?: "auto" | "hidden" | "external";
+    /** Optional badges shown next to billing interval labels, e.g. `{ "every-year": "-20%" }`. */
+    cycleBadges?: Partial<Record<SupportedRecurringCycle, string>>;
+    /** Local UI permission overrides for this subscription root. */
     permissions?: BillingPermissions;
+    /** Wrapper CSS class. */
     class?: string;
+    /** Checkout success URL override. Defaults to Creem product success URL, then the current page. */
     successUrl?: string;
+    /** App-derived quantity for unit-based plans. */
     units?: number;
-    showSeatPicker?: boolean;
-    twoColumnLayout?: boolean;
-    updateBehavior?: UpdateBehavior;
+    /** Show quantity controls on unit-based plan cards. */
+    showUnitPicker?: boolean;
+    /** Preferred number of pricing columns. `"auto"` derives this from the visible plan count. */
+    columns?: "auto" | 1 | 2 | 3 | 4;
+    /** Paid subscription update behavior for paid-to-paid plan switches and unit changes. */
+    updateBehavior?: UpdateBehaviorSetting;
+    /** Cancellation behavior for paid-to-free or paid-to-app-owned plan switches. */
+    freePlanUpdateBehavior?: FreePlanUpdateBehaviorSetting;
+    /** Remove built-in classes from compound subscription pieces. */
+    unstyled?: boolean;
+    /** Optional checkout guard for this root. Overrides provider guard. */
     onBeforeCheckout?: (intent: CheckoutIntent) => Promise<boolean> | boolean;
+    /** Optional paid-plan-change guard for this root. Overrides provider guard. */
+    onBeforePlanChange?: (intent: PlanChangeIntent) => Promise<boolean> | boolean;
+    /** Optional app-owned-plan activation guard for this root. Overrides provider guard. */
+    onBeforePlanActivation?: (intent: { planId: string }) => Promise<boolean> | boolean;
+    /** Local subscription label overrides. */
+    labels?: BillingLabelOverrides;
+    /** Local locale, labels, or formatter overrides. */
+    i18n?: BillingI18n;
+    /** Optional compound subscription markup. When omitted, default pricing cards render. */
     children?: import("svelte").Snippet;
   }
 
   let {
-    api,
+    catalog = undefined,
+    plans: planIds = undefined,
+    groups: explicitGroups = undefined,
+    defaultGroup = undefined,
+    group = undefined,
+    onGroupChange = undefined,
+    groupSelector = "auto",
+    defaultCycle = undefined,
+    cycle = undefined,
+    onCycleChange = undefined,
+    intervalSelector = "auto",
+    cycleBadges = undefined,
     permissions = undefined,
     class: className = "",
     successUrl = undefined,
     units = undefined,
-    showSeatPicker = false,
-    twoColumnLayout = false,
-    updateBehavior = "proration-charge-immediately",
+    showUnitPicker = false,
+    columns = "auto",
+    updateBehavior = undefined,
+    freePlanUpdateBehavior = undefined,
+    unstyled = false,
     onBeforeCheckout = undefined,
+    onBeforePlanChange = undefined,
+    onBeforePlanActivation = undefined,
+    labels: labelOverrides = undefined,
+    i18n = undefined,
     children,
   }: Props = $props();
 
-  const canChange = $derived(permissions?.canChangeSubscription !== false);
-  const canCancel = $derived(permissions?.canCancelSubscription !== false);
-  const canResume = $derived(permissions?.canResumeSubscription !== false);
+  const provider = getContext<CreemConvexContextValue | undefined>(
+    CREEM_CONVEX_CONTEXT_KEY,
+  );
+  const resolvedApi = provider?.api;
+  if (!resolvedApi) {
+    throw new Error(
+      "Subscription.Root must be rendered inside <CreemConvexProvider>.",
+    );
+  }
+
+  const resolvedDefaultCycle = $derived(
+    defaultCycle ?? provider?.defaultCycle ?? "every-month",
+  );
+  const resolvedPermissions = $derived(permissions ?? provider?.permissions);
+  const resolvedOnBeforeCheckout = $derived(
+    onBeforeCheckout ?? provider?.onBeforeCheckout,
+  );
+  const resolvedOnBeforePlanChange = $derived(
+    onBeforePlanChange ?? provider?.onBeforePlanChange,
+  );
+  const resolvedOnBeforePlanActivation = $derived(
+    onBeforePlanActivation ?? provider?.onBeforePlanActivation,
+  );
+  const resolvedI18n = $derived.by(() => {
+    const providerI18n = resolveBillingI18n(provider?.i18n);
+    return {
+      locale: i18n?.locale ?? providerI18n.locale,
+      labels: mergeBillingLabels(
+        labelOverrides,
+        mergeBillingLabels(i18n?.labels, providerI18n.labels),
+      ),
+      formatCurrency: i18n?.formatCurrency ?? providerI18n.formatCurrency,
+      formatDate: i18n?.formatDate ?? providerI18n.formatDate,
+    };
+  });
+
+  const canChange = $derived(resolvedPermissions?.canChangeSubscription !== false);
+  const canCancel = $derived(resolvedPermissions?.canCancelSubscription !== false);
+  const canResume = $derived(resolvedPermissions?.canResumeSubscription !== false);
 
   const client = useConvexClient();
 
-  // svelte-ignore state_referenced_locally
-  const billingUiModelRef = api.uiModel;
-  // svelte-ignore state_referenced_locally
-  const checkoutLinkRef = api.checkouts.create;
-  // svelte-ignore state_referenced_locally
-  const updateRef = api.subscriptions?.update;
-  // svelte-ignore state_referenced_locally
-  const cancelRef = api.subscriptions?.cancel;
-  // svelte-ignore state_referenced_locally
-  const resumeRef = api.subscriptions?.resume;
+  const billingUiModelRef = resolvedApi.uiModel;
+  const checkoutLinkRef = resolvedApi.checkouts.create;
+  const updateRef = resolvedApi.subscriptions?.update;
+  const cancelRef = resolvedApi.subscriptions?.cancel;
+  const resumeRef = resolvedApi.subscriptions?.resume;
+  const cancelScheduledUpdateRef =
+    resolvedApi.subscriptions?.cancelScheduledUpdate;
+  const activateAppPlanRef = resolvedApi.plans?.activate;
 
   const billingModelQuery = useQuery(billingUiModelRef, {});
+  const model = $derived(
+    (billingModelQuery.data ?? null) as ConnectedBillingModel | null,
+  );
+  const resolvedCatalog = $derived.by(() =>
+    mergePlanCatalogs(model?.catalog, provider?.catalog, catalog),
+  );
 
-  let selectedCycle = $state<RecurringCycle>("every-month");
+  let selectedCycle = $state<RecurringCycle>(
+    untrack(() => resolvedDefaultCycle),
+  );
+  let selectedGroupId = $state<string | null>(
+    untrack(() => defaultGroup ?? null),
+  );
   let isActionLoading = $state(false);
   let actionError = $state<string | null>(null);
   let updateDialogOpen = $state(false);
   let pendingUpdate = $state<
-    | { kind: "plan-switch"; plan: UIPlanEntry; productId: string; units?: number }
-    | { kind: "seat-update"; units: number }
+    | {
+        kind: "plan-switch";
+        plan: UIPlanEntry;
+        productId?: string;
+        appPlanId?: string;
+        freePlanId?: string;
+        units?: number;
+      }
+    | { kind: "unit-update"; units: number }
     | null
   >(null);
   let registeredPlans = $state<SubscriptionPlanRegistration[]>([]);
@@ -98,24 +249,71 @@
         );
       };
     },
+    getPlan: (planId) => plans.find((plan) => plan.planId === planId),
+    isPlanVisible: (planId) =>
+      visiblePlans.some((plan) => plan.planId === planId),
+    getSelectedCycle: () => effectiveCycle,
+    getActivePlanId: () => activePlanId,
+    getProducts: () => allProducts,
+    getSubscriptionProductId: () => localSubscriptionProductId,
+    getSubscriptionStatus: () => localSubscriptionState,
+    getSubscriptionTrialEnd: () => matchedSubscription?.trialEnd ?? null,
+    getScheduledUpdate: () => localScheduledUpdate,
+    getScheduledEffectiveDate: () => formattedScheduledEffectiveDate,
+    getSubscribedUnits: () => localSubscribedUnits,
+    getUnits: () => units,
+    getShowUnitPicker: () => showUnitPicker,
+    getIsGroupSubscribed: () => ownsActiveSubscription,
+    getDisableCheckout: () => !canCheckout,
+    getDisableSwitch: () => !canChange,
+    getDisableUnits: () => !canUpdateUnits,
+    getUnstyled: () => unstyled,
+    getLabels: () => resolvedI18n.labels,
+    getCycleBadge: (cycle) => cycleBadges?.[cycle],
+    formatCurrency: (input) => resolvedI18n.formatCurrency(input),
+    formatDate: (input) => resolvedI18n.formatDate(input),
+    checkout: (payload) => handlePricingCheckout(payload),
+    switchPlan: (payload) => requestSwitchPlan(payload),
+    updateUnits: (payload) => handleUpdateUnits(payload),
+    get cancelSubscription() {
+      return cancelRef &&
+        canCancel &&
+        ownsActiveSubscription &&
+        !localCancelAtPeriodEnd
+        ? () => openCancelDialog()
+        : undefined;
+    },
+    groupItems: () => groupItems,
+    activeGroupId: () => activeGroupId,
+    setGroup: (nextGroup) => {
+      clampCycleForGroup(nextGroup);
+      selectedGroupId = nextGroup;
+      onGroupChange?.(nextGroup);
+    },
+    availableCycles: () => availableCycles,
+    setCycle: (nextCycle) => {
+      const nextEffectiveCycle =
+        availableCycles.length === 0 || availableCycles.includes(nextCycle)
+          ? nextCycle
+          : (availableCycles[0] ?? nextCycle);
+      selectedCycle = nextEffectiveCycle;
+      onCycleChange?.(nextEffectiveCycle);
+    },
   };
 
   setContext(SUBSCRIPTION_CONTEXT_KEY, contextValue);
 
-  const model = $derived(
-    (billingModelQuery.data ?? null) as ConnectedBillingModel | null,
-  );
   const canCheckout = $derived(
-    !model?.user && onBeforeCheckout != null
+    !model?.user && resolvedOnBeforeCheckout != null
       ? true
-      : permissions?.canCheckout !== false,
+      : resolvedPermissions?.canCheckout !== false,
   );
-  const canUpdateSeats = $derived(
-    !model?.user && onBeforeCheckout != null
+  const canUpdateUnits = $derived(
+    !model?.user && resolvedOnBeforeCheckout != null
       ? true
-      : permissions?.canUpdateSeats !== false,
+      : resolvedPermissions?.canUpdateUnits !== false,
   );
-  const snapshot = $derived(model?.billingSnapshot ?? null);
+  const snapshot = $derived(model?.snapshot ?? null);
 
   $effect(() => {
     if (!model?.user) return;
@@ -130,32 +328,30 @@
     });
   });
 
-  const activePlanId = $derived.by<string | null>(() => {
-    if (!model) return null;
-    // Use this component's matched subscription product ID, not the global one
-    const subProductId = localSubscriptionProductId;
-    if (subProductId) {
-      const matchedPlan = registeredPlans.find((plan) => {
-        const values = Object.values(plan.productIds ?? {}).filter(
-          Boolean,
-        ) as string[];
-        return values.includes(subProductId);
-      });
-      return matchedPlan?.planId ?? null;
-    }
-    // No active subscription — if user is signed in, treat the free plan as active
-    if (model.user) {
-      const freePlan = plans.find((p) => p.category === "free");
-      if (freePlan) return freePlan.planId;
-    }
-    return null;
+  const allProducts = $derived(model?.allProducts ?? []);
+  const normalizedCatalog = $derived(normalizePlanCatalog(resolvedCatalog));
+
+  const catalogRegistrations = $derived.by<SubscriptionPlanRegistration[]>(() => {
+    const ids = explicitGroups && explicitGroups.length > 0
+      ? explicitGroups.flatMap((entry) => entry.plans)
+      : (planIds ?? []);
+
+    return ids.map((planId) => {
+      const groupEntry = explicitGroups?.find((entry) => entry.plans.includes(planId));
+      return {
+        planId,
+        groupId: groupEntry?.value,
+        groupTitle: groupEntry?.label,
+      };
+    });
   });
 
-  const allProducts = $derived(model?.allProducts ?? []);
-
   const plansFromRegistered = $derived.by<UIPlanEntry[]>(() => {
-    return registeredPlans.map((plan) => {
-      const productIds = plan.productIds ?? {};
+    return [...catalogRegistrations, ...registeredPlans].map((plan) => {
+      const catalogEntry = normalizedCatalog
+        ? findPlanById(normalizedCatalog, plan.planId)
+        : undefined;
+      const productIds = plan.productIds ?? catalogEntry?.creemProductIds ?? {};
       const firstProductId = Object.values(productIds)[0];
       const firstProduct = firstProductId
         ? allProducts.find((p) => p.id === firstProductId)
@@ -167,24 +363,24 @@
 
       const entry: UIPlanEntry = {
         planId: plan.planId,
-        category:
-          plan.type === "free"
-            ? "free"
-            : plan.type === "enterprise"
-              ? "enterprise"
-              : "paid",
-        billingType:
-          plan.type === "free" || plan.type === "enterprise"
-            ? "custom"
-            : "recurring",
-        pricingModel: plan.type === "seat-based" ? "seat" : "flat",
+        category: planTypeToCategory(plan.type, catalogEntry),
+        billingType: planTypeToBillingType(plan.type, catalogEntry),
+        pricingModel: plan.type === "unit-based" ? "unit" : (catalogEntry?.pricingModel ?? "flat"),
+        groupId: plan.groupId ?? catalogEntry?.groupId,
+        groupTitle: plan.groupTitle ?? catalogEntry?.groupTitle,
+        eligibilityScopeId: catalogEntry?.eligibilityScopeId,
         title:
           plan.title ??
+          catalogEntry?.title ??
           firstProduct?.name ??
           plan.planId.charAt(0).toUpperCase() + plan.planId.slice(1),
-        description: plan.description ?? firstProduct?.description ?? undefined,
-        contactUrl: plan.contactUrl,
-        recommended: plan.recommended,
+        description: plan.description ?? catalogEntry?.description ?? firstProduct?.description ?? undefined,
+        contactUrl: plan.contactUrl ?? catalogEntry?.contactUrl,
+        recommended: plan.recommended ?? catalogEntry?.recommended,
+        limits: catalogEntry?.limits,
+        creditGrant: catalogEntry?.creditGrant,
+        eligibility: catalogEntry?.eligibility,
+        metadata: catalogEntry?.metadata,
         creemProductIds:
           Object.keys(productIds).length > 0
             ? (productIds as Record<string, string>)
@@ -198,6 +394,38 @@
   });
 
   const plans = $derived(plansFromRegistered);
+
+  const groupItems = $derived.by(() => {
+    if (explicitGroups && explicitGroups.length > 0) {
+      return explicitGroups.map((entry) => ({
+        value: entry.value,
+        label: entry.label,
+      }));
+    }
+    const groups = new SvelteMap<string, string>();
+    for (const plan of plans) {
+      if (!plan.groupId) continue;
+      if (!groups.has(plan.groupId)) {
+        groups.set(plan.groupId, plan.groupTitle ?? formatGroupTitle(plan.groupId));
+      }
+    }
+    return Array.from(groups, ([value, label]) => ({ value, label }));
+  });
+
+  const requestedGroupId = $derived(group ?? selectedGroupId ?? defaultGroup ?? null);
+  const activeGroupId = $derived(
+    groupItems.length > 1 &&
+    requestedGroupId &&
+    groupItems.some((item) => item.value === requestedGroupId)
+      ? requestedGroupId
+      : (groupItems[0]?.value ?? null),
+  );
+
+  const groupedPlans = $derived(
+    groupItems.length > 1 && activeGroupId
+      ? plans.filter((plan) => plan.groupId === activeGroupId)
+      : plans,
+  );
 
   // Collect all product IDs that belong to plans in THIS component instance.
   const ownProductIds = $derived.by<Set<string>>(() => {
@@ -229,8 +457,277 @@
   const localCurrentPeriodEnd = $derived(
     matchedSubscription?.currentPeriodEnd ?? null,
   );
+  const formattedCancelPeriodEnd = $derived.by(() => {
+    if (!localCurrentPeriodEnd) return undefined;
+    const date = new Date(localCurrentPeriodEnd);
+    if (Number.isNaN(date.getTime())) return undefined;
+    return resolvedI18n.formatDate({ date });
+  });
+  const cancelDescription = $derived(
+    resolvedI18n.labels.subscription.dialogs.cancelDescription({
+      formattedDate: formattedCancelPeriodEnd,
+    }),
+  );
   const localSubscriptionState = $derived(matchedSubscription?.status ?? null);
-  const localSubscribedSeats = $derived(matchedSubscription?.seats ?? null);
+  const localSubscribedUnits = $derived(matchedSubscription?.units ?? null);
+  const localScheduledUpdate = $derived(
+    (model?.scheduledSubscriptionUpdates ?? []).find(
+      (update) => update.subscriptionId === matchedSubscription?.id,
+    ) ?? null,
+  );
+  const formattedScheduledEffectiveDate = $derived.by(() => {
+    if (!localScheduledUpdate?.effectiveAt) return null;
+    const date = new Date(localScheduledUpdate.effectiveAt);
+    if (Number.isNaN(date.getTime())) return null;
+    return resolvedI18n.formatDate({ date });
+  });
+
+  const activePlanId = $derived.by<string | null>(() => {
+    if (!model) return null;
+    // Use this component's matched subscription product ID, not the global one.
+    const subProductId = localSubscriptionProductId;
+    if (subProductId) {
+      const matchedPlan = plans.find((plan) => {
+        const values = Object.values(plan.creemProductIds ?? {}).filter(
+          Boolean,
+        ) as string[];
+        return values.includes(subProductId);
+      });
+      return matchedPlan?.planId ?? null;
+    }
+    // No active subscription: use explicit app-owned plan state when the app provides it.
+    if (model.activePlanId !== undefined) {
+      return model.activePlanId;
+    }
+    const assignedPlanId =
+      model.appPlanAssignments?.find(
+        (assignment) =>
+          assignment.status === "active" &&
+          plans.some((plan) => plan.planId === assignment.planId),
+      )?.planId ?? null;
+    if (assignedPlanId) {
+      return assignedPlanId;
+    }
+    if (model.activeFreePlanId !== undefined) {
+      return model.activeFreePlanId;
+    }
+    // Backwards-compatible default: signed-in users without a subscription are on the first free plan.
+    if (model.user) {
+      const freePlan = plans.find((p) => p.category === "free");
+      if (freePlan) return freePlan.planId;
+    }
+    return null;
+  });
+
+  const activeOrScheduledPlanIds = $derived.by<string[]>(() => {
+    if (!model) return [];
+    const planIds = new SvelteSet<string>();
+    const addPlanId = (planId: string | null | undefined) => {
+      if (planId && plans.some((plan) => plan.planId === planId)) {
+        planIds.add(planId);
+      }
+    };
+    const addProductId = (productId: string | null | undefined) => {
+      const plan = getPlanForProduct(productId);
+      if (plan) {
+        planIds.add(plan.planId);
+      }
+    };
+
+    addProductId(localSubscriptionProductId);
+    addPlanId(model.activePlanId);
+    addPlanId(model.activeFreePlanId);
+
+    for (const subscription of model.activeSubscriptions ?? []) {
+      addProductId(subscription.productId);
+    }
+    for (const assignment of model.appPlanAssignments ?? []) {
+      if (assignment.status === "active" || assignment.status === "scheduled") {
+        addPlanId(assignment.planId);
+      }
+    }
+    for (const update of model.scheduledSubscriptionUpdates ?? []) {
+      addProductId(update.targetProductId);
+      addPlanId(update.targetPlanId);
+    }
+
+    return Array.from(planIds);
+  });
+
+  const visiblePlans = $derived(
+    groupedPlans.filter((plan) =>
+      shouldShowPlan(plan, model?.appPlanActivations, {
+        activePlanId,
+        activeOrScheduledPlanIds,
+        catalogPlans: plans,
+      }),
+    ),
+  );
+
+  const availableCycles = $derived.by<RecurringCycle[]>(() => {
+    const cycles = new SvelteSet<RecurringCycle>();
+    for (const plan of visiblePlans) {
+      for (const cycle of plan.billingCycles ?? []) {
+        cycles.add(cycle);
+      }
+    }
+    return Array.from(cycles);
+  });
+
+  const effectiveCycle = $derived.by<RecurringCycle>(() => {
+    const requestedCycle = cycle ?? selectedCycle;
+    if (
+      availableCycles.length === 0 ||
+      availableCycles.includes(requestedCycle)
+    ) {
+      return requestedCycle;
+    }
+    return availableCycles[0] ?? requestedCycle;
+  });
+
+  function getProductPrice(productId?: string | null) {
+    return productId
+      ? (allProducts.find((product) => product.id === productId)?.price ?? null)
+      : null;
+  }
+
+  function hasProductMappings(plan: PlanCatalogEntry | undefined) {
+    return Object.keys(plan?.creemProductIds ?? {}).length > 0 ||
+      Object.keys(plan?.products ?? {}).length > 0;
+  }
+
+  function mergePlanCatalogs(
+    ...catalogs: Array<PlanCatalog | null | undefined>
+  ): PlanCatalog | undefined {
+    const defined = catalogs.filter(
+      (entry): entry is PlanCatalog => entry != null,
+    );
+    if (defined.length === 0) return undefined;
+
+    const order: string[] = [];
+    const plansById = new SvelteMap<string, PlanCatalogEntry>();
+
+    for (const entry of defined) {
+      for (const plan of entry.plans) {
+        const existing = plansById.get(plan.planId);
+        if (!existing) {
+          order.push(plan.planId);
+          plansById.set(plan.planId, plan);
+          continue;
+        }
+
+        const merged: PlanCatalogEntry = {
+          ...existing,
+          ...plan,
+          creemProductIds:
+            Object.keys(plan.creemProductIds ?? {}).length > 0
+              ? plan.creemProductIds
+              : existing.creemProductIds,
+          products:
+            Object.keys(plan.products ?? {}).length > 0
+              ? plan.products
+              : existing.products,
+        };
+        if (!hasProductMappings(merged) && hasProductMappings(existing)) {
+          merged.creemProductIds = existing.creemProductIds;
+          merged.products = existing.products;
+        }
+        plansById.set(plan.planId, merged);
+      }
+    }
+
+    return {
+      version: defined.at(-1)?.version ?? defined[0].version,
+      defaultPlanId: defined.at(-1)?.defaultPlanId ?? defined[0].defaultPlanId,
+      plans: order.flatMap((planId) => {
+        const plan = plansById.get(planId);
+        return plan ? [plan] : [];
+      }),
+    };
+  }
+
+  function getPlanForProduct(productId?: string | null) {
+    return productId
+      ? (plans.find((plan) =>
+          Object.values(plan.creemProductIds ?? {}).includes(productId),
+        ) ?? null)
+      : null;
+  }
+
+  function resolveUpdateBehavior(
+    update:
+      | {
+          kind: "plan-switch";
+          plan: UIPlanEntry;
+          productId?: string;
+          appPlanId?: string;
+          freePlanId?: string;
+          units?: number;
+        }
+      | { kind: "unit-update"; units: number },
+  ): ResolvedUpdateBehavior {
+    const currentPlan = getPlanForProduct(localSubscriptionProductId);
+
+    if (update.kind === "plan-switch" && update.freePlanId) {
+      if (typeof freePlanUpdateBehavior !== "function") {
+        return resolveFreePlanUpdateBehavior(freePlanUpdateBehavior);
+      }
+      const intent: FreePlanUpdateBehaviorIntent = {
+        kind: "plan-switch",
+        target: "free-plan",
+        fromPlanId: activePlanId,
+        toPlanId: update.plan.planId,
+        fromPlan: currentPlan,
+        toPlan: update.plan,
+        fromProductId: localSubscriptionProductId,
+        toProductId: update.productId ?? null,
+        fromPrice: getProductPrice(localSubscriptionProductId),
+        toPrice: getProductPrice(update.productId),
+        currentUnits: localSubscribedUnits,
+        targetUnits: update.units,
+        freePlanId: update.freePlanId,
+        appPlanId: update.appPlanId,
+      };
+      return resolveFreePlanUpdateBehavior(freePlanUpdateBehavior(intent));
+    }
+
+    const applyTargetRules = (behavior: UpdateBehavior | undefined) =>
+      resolveTargetUpdateBehavior(behavior, {});
+
+    if (typeof updateBehavior !== "function") {
+      return applyTargetRules(updateBehavior);
+    }
+
+    const intent: UpdateBehaviorIntent =
+      update.kind === "plan-switch"
+        ? {
+            kind: "plan-switch",
+            target: "paid-plan",
+            fromPlanId: activePlanId,
+            toPlanId: update.plan.planId,
+            fromPlan: currentPlan,
+            toPlan: update.plan,
+            fromProductId: localSubscriptionProductId,
+            toProductId: update.productId ?? null,
+            fromPrice: getProductPrice(localSubscriptionProductId),
+            toPrice: getProductPrice(update.productId),
+            currentUnits: localSubscribedUnits,
+            targetUnits: update.units,
+          }
+        : {
+            kind: "unit-update",
+            target: "units",
+            fromPlanId: activePlanId,
+            fromPlan: currentPlan,
+            fromProductId: localSubscriptionProductId,
+            toProductId: localSubscriptionProductId,
+            fromPrice: getProductPrice(localSubscriptionProductId),
+            toPrice: getProductPrice(localSubscriptionProductId),
+            currentUnits: localSubscribedUnits,
+            targetUnits: update.units,
+          };
+    return applyTargetRules(updateBehavior(intent));
+  }
 
   const getFallbackSuccessUrl = (): string | undefined => {
     if (typeof window === "undefined") return undefined;
@@ -244,9 +741,65 @@
       : "light";
   };
 
+  function formatGroupTitle(value: string) {
+    return value
+      .split(/[-_\s]+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  }
+
+  function getCyclesForGroup(groupId: string | null) {
+    const targetPlans =
+      groupItems.length > 1 && groupId
+        ? plans.filter((plan) => plan.groupId === groupId)
+        : plans;
+    const cycles = new SvelteSet<RecurringCycle>();
+    for (const plan of targetPlans) {
+      for (const planCycle of plan.billingCycles ?? []) {
+        cycles.add(planCycle);
+      }
+    }
+    return Array.from(cycles);
+  }
+
+  function clampCycleForGroup(groupId: string | null) {
+    const targetCycles = getCyclesForGroup(groupId);
+    const requestedCycle = cycle ?? selectedCycle;
+    if (
+      targetCycles.length === 0 ||
+      targetCycles.includes(requestedCycle)
+    ) {
+      return;
+    }
+    const nextCycle = targetCycles[0];
+    if (!nextCycle) return;
+    if (cycle == null) {
+      selectedCycle = nextCycle;
+    }
+    onCycleChange?.(nextCycle);
+  }
+
+  function planTypeToCategory(
+    type: SubscriptionPlanRegistration["type"],
+    fallback?: PlanCatalogEntry,
+  ) {
+    if (type === "free") return "free";
+    if (type === "enterprise") return "enterprise";
+    return fallback?.category ?? "paid";
+  }
+
+  function planTypeToBillingType(
+    type: SubscriptionPlanRegistration["type"],
+    fallback?: PlanCatalogEntry,
+  ) {
+    if (type === "free" || type === "enterprise") return "custom";
+    return fallback?.billingType ?? "recurring";
+  }
+
   const startCheckout = async (productId: string, checkoutUnits?: number) => {
-    if (onBeforeCheckout) {
-      const proceed = await onBeforeCheckout({
+    if (resolvedOnBeforeCheckout) {
+      const proceed = await resolvedOnBeforeCheckout({
         productId,
         units: checkoutUnits,
       });
@@ -274,9 +827,11 @@
         { capture: true, once: true },
       );
       window.location.href = url;
-      window.location.href = url;
     } catch (error) {
-      actionError = error instanceof Error ? error.message : "Checkout failed";
+      actionError = getConvexErrorMessage(
+        error,
+        resolvedI18n.labels.subscription.checkoutFailed,
+      );
     } finally {
       isActionLoading = false;
     }
@@ -290,36 +845,106 @@
     await startCheckout(payload.productId, payload.units);
   };
 
-  const requestSwitchPlan = (payload: {
+  const activateAppPlan = async (appPlanId: string) => {
+    actionError = null;
+    try {
+      if (!activateAppPlanRef) return;
+      await client.mutation(activateAppPlanRef, {
+        planId: appPlanId,
+      });
+    } catch (err) {
+      actionError = getConvexErrorMessage(
+        err,
+        resolvedI18n.labels.subscription.switchFailed,
+      );
+    }
+  };
+
+  const requestSwitchPlan = async (payload: {
     plan: UIPlanEntry;
-    productId: string;
+    productId?: string;
+    appPlanId?: string;
+    freePlanId?: string;
     units?: number;
   }) => {
+    // Consent gate: onBeforePlanChange
+    if (resolvedOnBeforePlanChange) {
+      const proceed = await resolvedOnBeforePlanChange({
+        fromPlanId: activePlanId,
+        toPlanId: payload.plan.planId,
+        productId: payload.productId,
+        appPlanId: payload.appPlanId,
+        freePlanId: payload.freePlanId,
+        units: payload.units,
+      });
+      if (!proceed) return;
+    }
+    const appPlanId = payload.appPlanId ?? payload.freePlanId;
+    // Consent gate: onBeforePlanActivation
+    if (resolvedOnBeforePlanActivation && appPlanId) {
+      const proceed = await resolvedOnBeforePlanActivation({
+        planId: appPlanId,
+      });
+      if (!proceed) return;
+    }
+    if (appPlanId && !matchedSubscription?.id && activateAppPlanRef) {
+      await activateAppPlan(appPlanId);
+      return;
+    }
     pendingUpdate = { kind: "plan-switch", ...payload };
     updateDialogOpen = true;
   };
 
   const confirmUpdate = async () => {
-    if (!updateRef || !pendingUpdate) return;
+    if (!pendingUpdate) return;
     const update = pendingUpdate;
+    const selectedUpdateBehavior = resolveUpdateBehavior(update);
     const subId = matchedSubscription?.id;
     updateDialogOpen = false;
     pendingUpdate = null;
     actionError = null;
     try {
       if (update.kind === "plan-switch") {
+        const appPlanId = update.appPlanId ?? update.freePlanId;
+        if (appPlanId && !subId && activateAppPlanRef) {
+          await activateAppPlan(appPlanId);
+          return;
+        }
+        if (!updateRef) return;
         await client.mutation(
           updateRef,
           {
-            productId: update.productId,
+            ...(update.productId ? { productId: update.productId } : {}),
+            ...(update.freePlanId ? { freePlanId: update.freePlanId } : {}),
             ...(subId ? { subscriptionId: subId } : {}),
-            updateBehavior,
+            updateBehavior: selectedUpdateBehavior,
           },
           {
             optimisticUpdate: (store) => {
               const current = store.getQuery(billingUiModelRef, {});
               if (current) {
                 const m = current as ConnectedBillingModel;
+                if (selectedUpdateBehavior === "period-end") {
+                  store.setQuery(billingUiModelRef, {}, {
+                    ...m,
+                    scheduledSubscriptionUpdates: [
+                      ...(m.scheduledSubscriptionUpdates ?? []).filter(
+                        (scheduled) => scheduled.subscriptionId !== subId,
+                      ),
+                      {
+                        entityId: "",
+                        subscriptionId: subId ?? "",
+                        targetProductId: update.productId,
+                            targetPlanId: update.appPlanId ?? update.freePlanId,
+                        effectiveAt: matchedSubscription?.currentPeriodEnd ?? "",
+                        status: "pending",
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                      },
+                    ],
+                  });
+                  return;
+                }
                 store.setQuery(
                   billingUiModelRef,
                   {},
@@ -327,7 +952,7 @@
                     ...m,
                     activeSubscriptions: (m.activeSubscriptions ?? []).map((s) =>
                       ownProductIds.has(s.productId)
-                        ? { ...s, productId: update.productId }
+                        ? { ...s, productId: update.productId ?? s.productId }
                         : s,
                     ),
                   },
@@ -337,25 +962,46 @@
           },
         );
       } else {
+        if (!updateRef) return;
         await client.mutation(
           updateRef,
           {
             units: update.units,
             ...(subId ? { subscriptionId: subId } : {}),
-            updateBehavior,
+            updateBehavior: selectedUpdateBehavior,
           },
           {
             optimisticUpdate: (store) => {
               const current = store.getQuery(billingUiModelRef, {});
               if (current) {
                 const m = current as ConnectedBillingModel;
+                if (selectedUpdateBehavior === "period-end") {
+                  store.setQuery(billingUiModelRef, {}, {
+                    ...m,
+                    scheduledSubscriptionUpdates: [
+                      ...(m.scheduledSubscriptionUpdates ?? []).filter(
+                        (scheduled) => scheduled.subscriptionId !== subId,
+                      ),
+                      {
+                        entityId: "",
+                        subscriptionId: subId ?? "",
+                        targetUnits: update.units,
+                        effectiveAt: matchedSubscription?.currentPeriodEnd ?? "",
+                        status: "pending",
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                      },
+                    ],
+                  });
+                  return;
+                }
                 store.setQuery(
                   billingUiModelRef,
                   {},
                   {
                     ...m,
                     activeSubscriptions: (m.activeSubscriptions ?? []).map((s) =>
-                      s.id === subId ? { ...s, seats: update.units } : s,
+                      s.id === subId ? { ...s, units: update.units } : s,
                     ),
                   },
                 );
@@ -365,57 +1011,160 @@
         );
       }
     } catch (error) {
-      actionError = error instanceof Error
-        ? error.message
-        : update.kind === "plan-switch"
-          ? "Switch failed"
-          : "Seat update failed";
+      actionError = getConvexErrorMessage(
+        error,
+        update.kind === "plan-switch"
+          ? resolvedI18n.labels.subscription.switchFailed
+          : resolvedI18n.labels.subscription.unitUpdateFailed,
+      );
     }
   };
 
-  const handleUpdateSeats = (payload: { units: number }) => {
-    pendingUpdate = { kind: "seat-update", units: payload.units };
+  const handleUpdateUnits = (payload: { units: number }) => {
+    pendingUpdate = { kind: "unit-update", units: payload.units };
     updateDialogOpen = true;
   };
 
   const updateSummary = $derived.by(() => {
     if (!pendingUpdate) return null;
+    const selectedUpdateBehavior = resolveUpdateBehavior(pendingUpdate);
 
     if (pendingUpdate.kind === "plan-switch") {
       const currentPlan = plans.find((p) => {
         const pids = p.creemProductIds ? Object.values(p.creemProductIds) : [];
         return localSubscriptionProductId != null && pids.includes(localSubscriptionProductId);
       });
-      const currentTitle = currentPlan?.title ?? "Current plan";
-      const currentPrice = formatPriceWithInterval(localSubscriptionProductId ?? undefined, allProducts);
-      const newPrice = formatPriceWithInterval(pendingUpdate.productId, allProducts);
+      const currentTitle = currentPlan?.title ?? resolvedI18n.labels.subscription.currentPlan;
+      const switchUnits =
+        pendingUpdate.units ?? localSubscribedUnits ?? units ?? 1;
+      const useUnitBreakdown =
+        currentPlan?.pricingModel === "unit" ||
+        pendingUpdate.plan.pricingModel === "unit";
+      const currentBreakdown = useUnitBreakdown
+        ? formatUnitPriceBreakdown(
+            localSubscriptionProductId ?? undefined,
+            allProducts,
+            switchUnits,
+            resolvedI18n.labels,
+            resolvedI18n.formatCurrency,
+          )
+        : null;
+      const newBreakdown = useUnitBreakdown
+        ? pendingUpdate.productId
+          ? formatUnitPriceBreakdown(
+              pendingUpdate.productId,
+              allProducts,
+              switchUnits,
+              resolvedI18n.labels,
+              resolvedI18n.formatCurrency,
+            )
+          : null
+        : null;
+      const currentPrice =
+        currentBreakdown?.total ??
+        formatPriceWithInterval(
+          localSubscriptionProductId ?? undefined,
+          allProducts,
+          resolvedI18n.labels,
+          resolvedI18n.formatCurrency,
+        );
+      const newPrice =
+        newBreakdown?.total ??
+        (pendingUpdate.productId
+          ? formatPriceWithInterval(
+              pendingUpdate.productId,
+              allProducts,
+              resolvedI18n.labels,
+              resolvedI18n.formatCurrency,
+            )
+          : null);
+      const currentPriceAmount = getProductPrice(localSubscriptionProductId);
+      const newPriceAmount = getProductPrice(pendingUpdate.productId);
+      const currentComparisonPrice =
+        currentPriceAmount != null && useUnitBreakdown
+          ? currentPriceAmount * switchUnits
+          : currentPriceAmount;
+      const newComparisonPrice =
+        newPriceAmount != null && useUnitBreakdown
+          ? newPriceAmount * switchUnits
+          : newPriceAmount;
 
       return buildUpdateSummary({
         kind: "plan-switch",
-        updateBehavior,
+        updateBehavior: selectedUpdateBehavior,
         currentLabel: currentPrice ? `${currentTitle} \u00b7 ${currentPrice}` : currentTitle,
         newLabel: newPrice
-          ? `${pendingUpdate.plan.title ?? "New plan"} \u00b7 ${newPrice}`
-          : (pendingUpdate.plan.title ?? "New plan"),
+          ? `${pendingUpdate.plan.title ?? resolvedI18n.labels.subscription.newPlan} \u00b7 ${newPrice}`
+          : (pendingUpdate.plan.title ?? resolvedI18n.labels.subscription.newPlan),
+        currentPrice: currentComparisonPrice,
+        newPrice: newComparisonPrice,
+        currentCaption: currentBreakdown?.calculation ?? null,
+        newCaption: newBreakdown?.calculation ?? null,
         currentPeriodEnd: matchedSubscription?.currentPeriodEnd,
         isTrialing: matchedSubscription?.status === "trialing",
         trialEnd: matchedSubscription?.trialEnd,
+        labels: resolvedI18n.labels,
+        formatDate: resolvedI18n.formatDate,
       });
     }
 
-    const currentSeats = localSubscribedSeats ?? 1;
-    const currentPrice = formatSeatPrice(localSubscriptionProductId ?? undefined, allProducts, currentSeats);
-    const newPrice = formatSeatPrice(localSubscriptionProductId ?? undefined, allProducts, pendingUpdate.units);
+    const currentUnits = localSubscribedUnits ?? 1;
+    const currentPrice = formatUnitPrice(
+      localSubscriptionProductId ?? undefined,
+      allProducts,
+      currentUnits,
+      resolvedI18n.labels,
+      resolvedI18n.formatCurrency,
+    );
+    const newPrice = formatUnitPrice(
+      localSubscriptionProductId ?? undefined,
+      allProducts,
+      pendingUpdate.units,
+      resolvedI18n.labels,
+      resolvedI18n.formatCurrency,
+    );
+    const unitPriceAmount = getProductPrice(localSubscriptionProductId);
 
     return buildUpdateSummary({
-      kind: "seat-update",
-      updateBehavior,
-      currentLabel: currentPrice ?? `${currentSeats} seat${currentSeats !== 1 ? "s" : ""}`,
-      newLabel: newPrice ?? `${pendingUpdate.units} seat${pendingUpdate.units !== 1 ? "s" : ""}`,
+      kind: "unit-update",
+      updateBehavior: selectedUpdateBehavior,
+      currentLabel: currentPrice ?? resolvedI18n.labels.subscription.unitCount(currentUnits),
+      newLabel: newPrice ?? resolvedI18n.labels.subscription.unitCount(pendingUpdate.units),
+      currentPrice: unitPriceAmount != null ? unitPriceAmount * currentUnits : null,
+      newPrice: unitPriceAmount != null ? unitPriceAmount * pendingUpdate.units : null,
       currentPeriodEnd: matchedSubscription?.currentPeriodEnd,
       isTrialing: matchedSubscription?.status === "trialing",
       trialEnd: matchedSubscription?.trialEnd,
+      labels: resolvedI18n.labels,
+      formatDate: resolvedI18n.formatDate,
     });
+  });
+
+  const scheduledUpdateLabel = $derived.by(() => {
+    if (!localScheduledUpdate) return null;
+    if (localScheduledUpdate.targetProductId) {
+      const targetPlan = getPlanForProduct(localScheduledUpdate.targetProductId);
+      const price = formatPriceWithInterval(
+        localScheduledUpdate.targetProductId,
+        allProducts,
+        resolvedI18n.labels,
+        resolvedI18n.formatCurrency,
+      );
+      const title = targetPlan?.title ?? resolvedI18n.labels.subscription.newPlan;
+      return price ? `${title} \u00b7 ${price}` : title;
+    }
+    if (localScheduledUpdate.targetPlanId) {
+      const targetPlan = plans.find(
+        (plan) => plan.planId === localScheduledUpdate.targetPlanId,
+      );
+      return targetPlan?.title ?? localScheduledUpdate.targetPlanId;
+    }
+    if (localScheduledUpdate.targetUnits !== undefined) {
+      return resolvedI18n.labels.subscription.unitCount(
+        localScheduledUpdate.targetUnits,
+      );
+    }
+    return null;
   });
 
   const confirmCancelSubscription = async () => {
@@ -451,7 +1200,10 @@
         },
       );
     } catch (error) {
-      actionError = error instanceof Error ? error.message : "Cancel failed";
+      actionError = getConvexErrorMessage(
+        error,
+        resolvedI18n.labels.subscription.cancelFailed,
+      );
     }
   };
 
@@ -487,7 +1239,50 @@
         },
       );
     } catch (error) {
-      actionError = error instanceof Error ? error.message : "Resume failed";
+      actionError = getConvexErrorMessage(
+        error,
+        resolvedI18n.labels.subscription.resumeFailed,
+      );
+    }
+  };
+
+  const undoScheduledUpdate = async () => {
+    if (!cancelScheduledUpdateRef) return;
+    const subId = matchedSubscription?.id;
+    actionError = null;
+    try {
+      await client.mutation(
+        cancelScheduledUpdateRef,
+        {
+          ...(subId ? { subscriptionId: subId } : {}),
+        },
+        {
+          optimisticUpdate: (store) => {
+            const current = store.getQuery(billingUiModelRef, {});
+            if (current) {
+              const m = current as ConnectedBillingModel;
+              store.setQuery(
+                billingUiModelRef,
+                {},
+                {
+                  ...m,
+                  scheduledSubscriptionUpdates: (
+                    m.scheduledSubscriptionUpdates ?? []
+                  ).filter((update) => update.subscriptionId !== subId),
+                  activeSubscriptions: (m.activeSubscriptions ?? []).map((s) =>
+                    s.id === subId ? { ...s, cancelAtPeriodEnd: false } : s,
+                  ),
+                },
+              );
+            }
+          },
+        },
+      );
+    } catch (error) {
+      actionError = getConvexErrorMessage(
+        error,
+        resolvedI18n.labels.subscription.resumeFailed,
+      );
     }
   };
 
@@ -496,75 +1291,94 @@
   };
 </script>
 
-<div class="hidden" aria-hidden="true">
-  {@render children?.()}
-</div>
-
-<section class={`space-y-4 ${className}`}>
+<section class={unstyled ? className : `creem-base:space-y-4 ${className}`}>
   {#if actionError}
     <div
-      class="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+      class={unstyled
+        ? ""
+        : "creem-base:rounded-lg creem-base:border creem-base:border-red-300 creem-base:bg-red-50 creem-base:px-3 creem-base:py-2 creem-base:text-sm creem-base:text-red-700"}
     >
       {actionError}
     </div>
   {/if}
 
   {#if !model}
-    <p class="text-sm text-zinc-500">Loading billing model…</p>
+    <p class={unstyled ? "" : "creem-base:text-sm creem-base:text-zinc-500"}>{resolvedI18n.labels.subscription.loadingBillingModel}</p>
   {:else}
     {#if ownsActiveSubscription && snapshot}
       <ScheduledChangeBanner
-        snapshot={{
-          ...snapshot,
-          metadata: {
-            ...snapshot.metadata,
-            cancelAtPeriodEnd: localCancelAtPeriodEnd,
-            currentPeriodEnd: localCurrentPeriodEnd,
-          },
-        }}
+        cancelAtPeriodEnd={localCancelAtPeriodEnd}
+        currentPeriodEnd={localCurrentPeriodEnd}
+        scheduledUpdate={localScheduledUpdate}
         isLoading={isActionLoading}
+        scheduledUpdateLabel={scheduledUpdateLabel}
+        onUndoUpdate={cancelScheduledUpdateRef && canResume
+          ? undoScheduledUpdate
+          : undefined}
         onResume={resumeRef && canResume ? resumeSubscription : undefined}
+        labels={resolvedI18n.labels}
+        formatDate={resolvedI18n.formatDate}
       />
     {/if}
-    <PaymentWarningBanner {snapshot} />
+    <PaymentWarningBanner labels={resolvedI18n.labels} />
 
-    <PricingSection
-      {plans}
-      snapshot={snapshot ? { ...snapshot, activePlanId } : null}
-      {selectedCycle}
-      products={allProducts}
-      subscriptionProductId={localSubscriptionProductId}
-      subscriptionStatus={localSubscriptionState}
-      subscriptionTrialEnd={matchedSubscription?.trialEnd ?? null}
-      {units}
-      {showSeatPicker}
-      {twoColumnLayout}
-      subscribedSeats={localSubscribedSeats}
-      isGroupSubscribed={ownsActiveSubscription}
-      onCycleChange={(cycle) => {
-        selectedCycle = cycle;
-      }}
-      disableCheckout={!canCheckout}
-      disableSwitch={!canChange}
-      disableSeats={!canUpdateSeats}
-      onCheckout={canCheckout ? handlePricingCheckout : undefined}
-      onSwitchPlan={updateRef && canChange ? requestSwitchPlan : undefined}
-      onUpdateSeats={updateRef && canUpdateSeats
-        ? handleUpdateSeats
-        : undefined}
-      onCancelSubscription={cancelRef &&
-      canCancel &&
-      ownsActiveSubscription &&
-      !localCancelAtPeriodEnd
-        ? openCancelDialog
-        : undefined}
-    />
+    {#if groupSelector === "auto" && groupItems.length > 1}
+      <div class={unstyled ? "" : "creem-base:flex creem-base:justify-center"}>
+        <SegmentGroup
+          items={groupItems}
+          value={activeGroupId}
+          {unstyled}
+          onValueChange={(value) => {
+            selectedGroupId = value;
+            onGroupChange?.(value);
+          }}
+        />
+      </div>
+    {/if}
 
-    <div class="flex flex-wrap items-center gap-3">
-      {#if children}
-        {@render children()}
-      {/if}
-    </div>
+    {#if children}
+      {@render children()}
+    {:else}
+      <PricingSection
+        plans={visiblePlans}
+        {activePlanId}
+        selectedCycle={effectiveCycle}
+        products={allProducts}
+        subscriptionProductId={localSubscriptionProductId}
+        subscriptionStatus={localSubscriptionState}
+        subscriptionTrialEnd={matchedSubscription?.trialEnd ?? null}
+        scheduledUpdate={localScheduledUpdate}
+        scheduledEffectiveDate={formattedScheduledEffectiveDate}
+        {units}
+        showUnitPicker={showUnitPicker}
+        {columns}
+        subscribedUnits={localSubscribedUnits}
+        isGroupSubscribed={ownsActiveSubscription}
+        onCycleChange={(cycle) => {
+          contextValue.setCycle(cycle);
+        }}
+        showCycleToggle={intervalSelector === "auto"}
+        {cycleBadges}
+        disableCheckout={!canCheckout}
+        disableSwitch={!canChange}
+        disableUnits={!canUpdateUnits}
+        onCheckout={canCheckout ? handlePricingCheckout : undefined}
+        onSwitchPlan={(updateRef || activateAppPlanRef) && canChange
+          ? requestSwitchPlan
+          : undefined}
+        onUpdateUnits={updateRef && canUpdateUnits
+          ? handleUpdateUnits
+          : undefined}
+        onCancelSubscription={cancelRef &&
+        canCancel &&
+        ownsActiveSubscription &&
+        !localCancelAtPeriodEnd
+          ? openCancelDialog
+          : undefined}
+        labels={resolvedI18n.labels}
+        formatCurrency={resolvedI18n.formatCurrency}
+      />
+    {/if}
 
     <Dialog.Root
       open={cancelDialogOpen}
@@ -578,7 +1392,7 @@
           <Dialog.Content class="dialog-content">
             <Dialog.CloseTrigger
               class="icon-button-ghost-sm absolute right-2 top-2"
-              aria-label="Close dialog"
+              aria-label={resolvedI18n.labels.accessibility.closeDialog}
             >
               <svg
                 aria-hidden="true"
@@ -596,12 +1410,10 @@
               </svg>
             </Dialog.CloseTrigger>
             <Dialog.Title class="dialog-title">
-              Cancel subscription?
+              {resolvedI18n.labels.subscription.dialogs.cancelTitle}
             </Dialog.Title>
             <Dialog.Description class="dialog-description">
-              Are you sure you want to cancel your subscription? You will
-              continue to have access until the end of your current billing
-              period.
+              {cancelDescription}
             </Dialog.Description>
             <div class="dialog-actions">
               <button
@@ -609,10 +1421,10 @@
                 class="dialog-action-danger"
                 onclick={() => confirmCancelSubscription()}
               >
-                Yes, cancel
+                {resolvedI18n.labels.subscription.dialogs.confirmCancel}
               </button>
               <Dialog.CloseTrigger class="button-faded h-8 w-full">
-                Keep subscription
+                {resolvedI18n.labels.subscription.dialogs.keepSubscription}
               </Dialog.CloseTrigger>
             </div>
           </Dialog.Content>
@@ -633,7 +1445,7 @@
           <Dialog.Content class="dialog-content">
             <Dialog.CloseTrigger
               class="icon-button-ghost-sm absolute right-2 top-2"
-              aria-label="Close dialog"
+              aria-label={resolvedI18n.labels.accessibility.closeDialog}
             >
               <svg
                 aria-hidden="true"
@@ -658,10 +1470,20 @@
                 <span class="label-m text-foreground-muted">
                   {updateSummary.currentLabel}
                 </span>
+                {#if updateSummary.currentCaption}
+                  <span class="body-s text-foreground-placeholder">
+                    {updateSummary.currentCaption}
+                  </span>
+                {/if}
                 <span class="body-s text-foreground-placeholder">→</span>
                 <span class="label-m text-foreground-default">
                   {updateSummary.newLabel}
                 </span>
+                {#if updateSummary.newCaption}
+                  <span class="body-s text-foreground-placeholder">
+                    {updateSummary.newCaption}
+                  </span>
+                {/if}
               </div>
               <Dialog.Description class="dialog-description">
                 {updateSummary.description}
@@ -676,10 +1498,10 @@
                 class="button-filled h-8 w-full"
                 onclick={() => confirmUpdate()}
               >
-                {updateSummary?.confirmLabel ?? "Confirm"}
+                {updateSummary?.confirmLabel ?? resolvedI18n.labels.common.confirm}
               </button>
               <Dialog.CloseTrigger class="button-faded h-8 w-full">
-                Cancel
+                {resolvedI18n.labels.common.cancel}
               </Dialog.CloseTrigger>
             </div>
           </Dialog.Content>

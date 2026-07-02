@@ -24,6 +24,119 @@ import type { FunctionReference } from "convex/server";
 export type ComponentApi<Name extends string | undefined = string | undefined> =
   {
     lib: {
+      activateScheduledAppPlanAssignment: FunctionReference<
+        "mutation",
+        "internal",
+        { planId?: string; subscriptionId: string },
+        {
+          assignedByUserId?: string;
+          createdAt: string;
+          endsAt?: string | null;
+          entityId: string;
+          planId: string;
+          source?: string;
+          startsAt: string;
+          status: "active" | "scheduled" | "ended";
+          subscriptionId?: string;
+          updatedAt: string;
+        } | null,
+        Name
+      >;
+      applyScheduledSubscriptionUpdate: FunctionReference<
+        "action",
+        "internal",
+        {
+          apiKey: string;
+          scheduledUpdateId: string;
+          server?: "test" | "prod";
+          serverURL?: string;
+        },
+        any,
+        Name
+      >;
+      assignAppPlan: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          assignedByUserId?: string;
+          endsAt?: string | null;
+          entityId: string;
+          planId: string;
+          source?: string;
+          startsAt?: string;
+          status?: "active" | "scheduled";
+          subscriptionId?: string;
+        },
+        {
+          assignedByUserId?: string;
+          createdAt: string;
+          endsAt?: string | null;
+          entityId: string;
+          planId: string;
+          source?: string;
+          startsAt: string;
+          status: "active" | "scheduled" | "ended";
+          subscriptionId?: string;
+          updatedAt: string;
+        },
+        Name
+      >;
+      cancelPendingScheduledSubscriptionUpdates: FunctionReference<
+        "mutation",
+        "internal",
+        { entityId: string; subscriptionId: string },
+        Array<{
+          createdAt: string;
+          effectiveAt: string;
+          entityId: string;
+          error?: string;
+          scheduledFunctionId?: string;
+          status: "pending" | "applying" | "applied" | "superseded" | "failed";
+          subscriptionId: string;
+          targetPlanId?: string;
+          targetProductId?: string;
+          targetUnits?: number;
+          updatedAt: string;
+        }>,
+        Name
+      >;
+      cancelScheduledAppPlanAssignment: FunctionReference<
+        "mutation",
+        "internal",
+        { planId?: string; subscriptionId: string },
+        {
+          assignedByUserId?: string;
+          createdAt: string;
+          endsAt?: string | null;
+          entityId: string;
+          planId: string;
+          source?: string;
+          startsAt: string;
+          status: "active" | "scheduled" | "ended";
+          subscriptionId?: string;
+          updatedAt: string;
+        } | null,
+        Name
+      >;
+      cancelScheduledSubscriptionUpdate: FunctionReference<
+        "mutation",
+        "internal",
+        { entityId: string; subscriptionId: string },
+        {
+          createdAt: string;
+          effectiveAt: string;
+          entityId: string;
+          error?: string;
+          scheduledFunctionId?: string;
+          status: "pending" | "applying" | "applied" | "superseded" | "failed";
+          subscriptionId: string;
+          targetPlanId?: string;
+          targetProductId?: string;
+          targetUnits?: number;
+          updatedAt: string;
+        } | null,
+        Name
+      >;
       createOrder: FunctionReference<
         "mutation",
         "internal",
@@ -82,6 +195,20 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         any,
         Name
       >;
+      createScheduledSubscriptionUpdate: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          effectiveAt: string;
+          entityId: string;
+          subscriptionId: string;
+          targetPlanId?: string;
+          targetProductId?: string;
+          targetUnits?: number;
+        },
+        string,
+        Name
+      >;
       createSubscription: FunctionReference<
         "mutation",
         "internal",
@@ -119,6 +246,13 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         any,
         Name
       >;
+      endActiveAppPlanAssignments: FunctionReference<
+        "mutation",
+        "internal",
+        { endedAt?: string; entityId: string },
+        number,
+        Name
+      >;
       executeSubscriptionLifecycle: FunctionReference<
         "action",
         "internal",
@@ -128,7 +262,8 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
           operation: "cancel" | "resume" | "pause";
           previousCancelAtPeriodEnd?: boolean;
           previousStatus?: string;
-          serverIdx?: number;
+          scheduledUpdateId?: string;
+          server?: "test" | "prod";
           serverURL?: string;
           subscriptionId: string;
         },
@@ -143,13 +278,28 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
           previousProductId?: string;
           previousSeats?: number | null;
           productId?: string;
-          serverIdx?: number;
+          resumeScheduledCancellation?: boolean;
+          server?: "test" | "prod";
           serverURL?: string;
           subscriptionId: string;
           units?: number;
           updateBehavior?: string;
         },
         any,
+        Name
+      >;
+      getAppPlanActivation: FunctionReference<
+        "query",
+        "internal",
+        { entityId: string; planId: string },
+        {
+          activatedByUserId?: string;
+          activationCount: number;
+          entityId: string;
+          firstActivatedAt: number;
+          lastActivatedAt: number;
+          planId: string;
+        } | null,
         Name
       >;
       getCurrentSubscription: FunctionReference<
@@ -247,6 +397,25 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
           status: string;
           taxCategory?: string;
           taxMode?: string;
+        } | null,
+        Name
+      >;
+      getScheduledSubscriptionUpdate: FunctionReference<
+        "query",
+        "internal",
+        { scheduledUpdateId: string },
+        {
+          createdAt: string;
+          effectiveAt: string;
+          entityId: string;
+          error?: string;
+          scheduledFunctionId?: string;
+          status: "pending" | "applying" | "applied" | "superseded" | "failed";
+          subscriptionId: string;
+          targetPlanId?: string;
+          targetProductId?: string;
+          targetUnits?: number;
+          updatedAt: string;
         } | null,
         Name
       >;
@@ -357,6 +526,38 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         }>,
         Name
       >;
+      listAppPlanActivations: FunctionReference<
+        "query",
+        "internal",
+        { entityId: string },
+        Array<{
+          activatedByUserId?: string;
+          activationCount: number;
+          entityId: string;
+          firstActivatedAt: number;
+          lastActivatedAt: number;
+          planId: string;
+        }>,
+        Name
+      >;
+      listAppPlanAssignments: FunctionReference<
+        "query",
+        "internal",
+        { entityId: string },
+        Array<{
+          assignedByUserId?: string;
+          createdAt: string;
+          endsAt?: string | null;
+          entityId: string;
+          planId: string;
+          source?: string;
+          startsAt: string;
+          status: "active" | "scheduled" | "ended";
+          subscriptionId?: string;
+          updatedAt: string;
+        }>,
+        Name
+      >;
       listCustomerSubscriptions: FunctionReference<
         "query",
         "internal",
@@ -389,6 +590,25 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
           status: string;
           trialEnd?: string | null;
           trialStart?: string | null;
+        }>,
+        Name
+      >;
+      listPendingScheduledSubscriptionUpdates: FunctionReference<
+        "query",
+        "internal",
+        { entityId: string },
+        Array<{
+          createdAt: string;
+          effectiveAt: string;
+          entityId: string;
+          error?: string;
+          scheduledFunctionId?: string;
+          status: "pending" | "applying" | "applied" | "superseded" | "failed";
+          subscriptionId: string;
+          targetPlanId?: string;
+          targetProductId?: string;
+          targetUnits?: number;
+          updatedAt: string;
         }>,
         Name
       >;
@@ -501,6 +721,27 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         }>,
         Name
       >;
+      markScheduledSubscriptionUpdateApplied: FunctionReference<
+        "mutation",
+        "internal",
+        { scheduledUpdateId: string },
+        any,
+        Name
+      >;
+      markScheduledSubscriptionUpdateApplying: FunctionReference<
+        "mutation",
+        "internal",
+        { scheduledUpdateId: string },
+        boolean,
+        Name
+      >;
+      markScheduledSubscriptionUpdateFailed: FunctionReference<
+        "mutation",
+        "internal",
+        { error: string; scheduledUpdateId: string },
+        any,
+        Name
+      >;
       patchSubscription: FunctionReference<
         "mutation",
         "internal",
@@ -515,10 +756,36 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         any,
         Name
       >;
+      recordAppPlanActivation: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          activatedByUserId?: string;
+          entityId: string;
+          oncePerEntity?: boolean;
+          planId: string;
+        },
+        {
+          activatedByUserId?: string;
+          activationCount: number;
+          entityId: string;
+          firstActivatedAt: number;
+          lastActivatedAt: number;
+          planId: string;
+        },
+        Name
+      >;
+      setScheduledSubscriptionUpdateJob: FunctionReference<
+        "mutation",
+        "internal",
+        { scheduledFunctionId: string; scheduledUpdateId: string },
+        any,
+        Name
+      >;
       syncProducts: FunctionReference<
         "action",
         "internal",
-        { apiKey: string; serverIdx?: number; serverURL?: string },
+        { apiKey: string; server?: "test" | "prod"; serverURL?: string },
         any,
         Name
       >;

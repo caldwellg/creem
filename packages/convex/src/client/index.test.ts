@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { ConvexError } from "convex/values";
 import { Creem } from "./index.js";
+import { defineBillingCatalog } from "../core/catalog.js";
 import type { ComponentApi } from "../component/_generated/component.js";
 
 type AnyFn = (...args: any[]) => any;
@@ -25,6 +27,28 @@ const REFS = {
   syncProducts: Symbol("syncProducts"),
   executeSubscriptionUpdate: Symbol("executeSubscriptionUpdate"),
   executeSubscriptionLifecycle: Symbol("executeSubscriptionLifecycle"),
+  createScheduledSubscriptionUpdate: Symbol(
+    "createScheduledSubscriptionUpdate",
+  ),
+  cancelScheduledSubscriptionUpdate: Symbol(
+    "cancelScheduledSubscriptionUpdate",
+  ),
+  cancelPendingScheduledSubscriptionUpdates: Symbol(
+    "cancelPendingScheduledSubscriptionUpdates",
+  ),
+  setScheduledSubscriptionUpdateJob: Symbol(
+    "setScheduledSubscriptionUpdateJob",
+  ),
+  applyScheduledSubscriptionUpdate: Symbol("applyScheduledSubscriptionUpdate"),
+  listPendingScheduledSubscriptionUpdates: Symbol(
+    "listPendingScheduledSubscriptionUpdates",
+  ),
+  listAppPlanActivations: Symbol("listAppPlanActivations"),
+  listAppPlanAssignments: Symbol("listAppPlanAssignments"),
+  recordAppPlanActivation: Symbol("recordAppPlanActivation"),
+  assignAppPlan: Symbol("assignAppPlan"),
+  cancelScheduledAppPlanAssignment: Symbol("cancelScheduledAppPlanAssignment"),
+  endActiveAppPlanAssignments: Symbol("endActiveAppPlanAssignments"),
 } as const;
 
 const mockComponent = {
@@ -41,9 +65,22 @@ function createMockCtx(queryMap: Record<symbol, unknown> = {}) {
       const entry = queryMap[ref as keyof typeof queryMap];
       return entry ?? null;
     }),
-    runMutation: vi.fn(async () => {}),
+    runMutation: vi.fn(async (ref: symbol): Promise<unknown> => {
+      if (ref === REFS.createScheduledSubscriptionUpdate) {
+        return "scheduled_update_1";
+      }
+      if (ref === REFS.cancelScheduledSubscriptionUpdate) {
+        return null;
+      }
+      if (ref === REFS.cancelPendingScheduledSubscriptionUpdates) {
+        return [];
+      }
+    }),
     runAction: vi.fn(async () => {}),
-    scheduler: { runAfter: vi.fn(async () => {}) },
+    scheduler: {
+      runAfter: vi.fn(async () => {}),
+      runAt: vi.fn(async () => "scheduled_fn_1"),
+    },
   };
 }
 
@@ -56,7 +93,7 @@ const ACTIVE_SUB = {
   cancelAtPeriodEnd: false,
   currentPeriodEnd: "2026-03-01T00:00:00Z",
   currentPeriodStart: "2026-02-01T00:00:00Z",
-  recurringInterval: "monthly",
+  recurringInterval: "every-month",
   seats: 1,
   trialEnd: null,
   entityId: "user_1",
@@ -72,6 +109,32 @@ const PRODUCT_1 = {
   status: "active",
   defaultSuccessUrl: null,
 };
+
+const ORDER_1 = {
+  id: "ord_1",
+  customerId: "cust_1",
+  productId: "prod_1",
+  amount: 2999,
+  currency: "USD",
+  status: "paid",
+  type: "onetime",
+  createdAt: "2026-02-01T00:00:00Z",
+  updatedAt: "2026-02-01T00:00:00Z",
+};
+
+const TEST_BILLING_CATALOG = defineBillingCatalog({
+  version: "test",
+  plans: [
+    {
+      planId: "pro",
+      category: "paid",
+      billingType: "recurring",
+      creemProductIds: {
+        "every-month": "prod_1",
+      },
+    },
+  ],
+});
 
 // ── Constructor ─────────────────────────────────────────────────────
 
@@ -101,13 +164,37 @@ describe("Creem constructor", () => {
     }
   });
 
-  it("accepts serverIdx and serverURL config", () => {
+  it("accepts server and serverURL config", () => {
     const creem = new Creem(mockComponent, {
       apiKey: "k",
-      serverIdx: 1,
+      server: "test",
       serverURL: "https://custom.creem.io",
     });
     expect(creem.sdk).toBeDefined();
+  });
+
+  it("passes CREEM_SERVER env fallback to component actions", async () => {
+    const originalServer = process.env["CREEM_SERVER"];
+    process.env["CREEM_SERVER"] = "test";
+    try {
+      const creem = new Creem(mockComponent, {
+        apiKey: "test_key",
+        webhookSecret: "s",
+      });
+      const ctx = createMockCtx();
+      await creem.syncProducts(ctx as never);
+      expect(ctx.runAction).toHaveBeenCalledWith(REFS.syncProducts, {
+        apiKey: "test_key",
+        server: "test",
+        serverURL: undefined,
+      });
+    } finally {
+      if (originalServer !== undefined) {
+        process.env["CREEM_SERVER"] = originalServer;
+      } else {
+        delete process.env["CREEM_SERVER"];
+      }
+    }
   });
 });
 
@@ -239,14 +326,48 @@ describe("subscriptions namespace", () => {
           productId: "prod_2",
           units: 5,
         }),
-      ).rejects.toThrow("Provide productId OR units, not both");
+      ).rejects.toThrow(
+        "Provide exactly one update target: productId, freePlanId, or units",
+      );
     });
 
     it("throws when neither productId nor units provided", async () => {
       const ctx = createMockCtx();
       await expect(
         creem.subscriptions.update(ctx as never, { entityId: "user_1" }),
-      ).rejects.toThrow("Provide productId or units");
+      ).rejects.toThrow(
+        "Provide exactly one update target: productId, freePlanId, or units",
+      );
+    });
+
+    it("rejects proration behavior for free plan updates", async () => {
+      const ctx = createMockCtx({
+        [REFS.getCurrentSubscription]: ACTIVE_SUB,
+      });
+      await expect(
+        creem.subscriptions.update(ctx as never, {
+          entityId: "user_1",
+          freePlanId: "free",
+          updateBehavior: "proration-charge",
+        }),
+      ).rejects.toThrow(
+        'freePlanId updates support updateBehavior: "period-end" or "immediate"',
+      );
+    });
+
+    it("rejects immediate behavior for paid plan and unit updates", async () => {
+      const ctx = createMockCtx({
+        [REFS.getCurrentSubscription]: ACTIVE_SUB,
+      });
+      await expect(
+        creem.subscriptions.update(ctx as never, {
+          entityId: "user_1",
+          productId: "prod_2",
+          updateBehavior: "immediate",
+        }),
+      ).rejects.toThrow(
+        'updateBehavior: "immediate" is only supported for freePlanId updates',
+      );
     });
 
     it("throws when subscription not found", async () => {
@@ -303,6 +424,290 @@ describe("subscriptions namespace", () => {
           subscriptionId: "sub_1",
           productId: "prod_new",
           previousProductId: "prod_1",
+        }),
+      );
+    });
+
+    it("stores a scheduled update for period-end changes without optimistic patching", async () => {
+      const ctx = createMockCtx({
+        [REFS.getCurrentSubscription]: ACTIVE_SUB,
+      });
+      await creem.subscriptions.update(ctx as never, {
+        entityId: "user_1",
+        productId: "prod_basic",
+        updateBehavior: "period-end",
+      });
+
+      expect(ctx.runMutation).toHaveBeenCalledWith(
+        REFS.createScheduledSubscriptionUpdate,
+        {
+          entityId: "user_1",
+          subscriptionId: "sub_1",
+          targetProductId: "prod_basic",
+          effectiveAt: "2026-03-01T00:00:00Z",
+        },
+      );
+      expect(ctx.scheduler.runAt).toHaveBeenCalledWith(
+        new Date("2026-03-01T00:00:00Z"),
+        REFS.applyScheduledSubscriptionUpdate,
+        expect.objectContaining({
+          scheduledUpdateId: "scheduled_update_1",
+        }),
+      );
+      expect(ctx.runMutation).toHaveBeenCalledWith(
+        REFS.setScheduledSubscriptionUpdateJob,
+        {
+          scheduledUpdateId: "scheduled_update_1",
+          scheduledFunctionId: "scheduled_fn_1",
+        },
+      );
+      expect(ctx.runMutation).not.toHaveBeenCalledWith(
+        REFS.patchSubscription,
+        expect.anything(),
+      );
+      expect(ctx.scheduler.runAfter).not.toHaveBeenCalledWith(
+        0,
+        REFS.executeSubscriptionUpdate,
+        expect.anything(),
+      );
+    });
+
+    it("schedules a paid-to-free change at period end and marks cancellation pending", async () => {
+      const ctx = createMockCtx({
+        [REFS.getCurrentSubscription]: ACTIVE_SUB,
+      });
+      await creem.subscriptions.update(ctx as never, {
+        entityId: "user_1",
+        freePlanId: "free",
+        updateBehavior: "period-end",
+      });
+
+      expect(ctx.runMutation).toHaveBeenCalledWith(
+        REFS.createScheduledSubscriptionUpdate,
+        {
+          entityId: "user_1",
+          subscriptionId: "sub_1",
+          targetPlanId: "free",
+          effectiveAt: "2026-03-01T00:00:00Z",
+        },
+      );
+      expect(ctx.runMutation).toHaveBeenCalledWith(REFS.assignAppPlan, {
+        entityId: "user_1",
+        planId: "free",
+        status: "scheduled",
+        startsAt: "2026-03-01T00:00:00Z",
+        source: "paid_to_free",
+        subscriptionId: "sub_1",
+      });
+      expect(ctx.runMutation).toHaveBeenCalledWith(REFS.patchSubscription, {
+        subscriptionId: "sub_1",
+        cancelAtPeriodEnd: true,
+      });
+      expect(ctx.scheduler.runAfter).toHaveBeenCalledWith(
+        0,
+        REFS.executeSubscriptionLifecycle,
+        expect.objectContaining({
+          subscriptionId: "sub_1",
+          cancelMode: "scheduled",
+          scheduledUpdateId: "scheduled_update_1",
+          previousStatus: "active",
+        }),
+      );
+    });
+
+    it("replaces a scheduled paid-to-free change with a paid period-end change", async () => {
+      const ctx = createMockCtx({
+        [REFS.getCurrentSubscription]: {
+          ...ACTIVE_SUB,
+          status: "scheduled_cancel",
+          cancelAtPeriodEnd: true,
+        },
+      });
+      ctx.runMutation.mockImplementation(async (ref: symbol) => {
+        if (ref === REFS.createScheduledSubscriptionUpdate) {
+          return "scheduled_update_1";
+        }
+        if (ref === REFS.cancelPendingScheduledSubscriptionUpdates) {
+          return [
+            {
+              entityId: "user_1",
+              subscriptionId: "sub_1",
+              targetPlanId: "free",
+              effectiveAt: "2026-03-01T00:00:00Z",
+              status: "superseded",
+              createdAt: "2026-02-01T00:00:00Z",
+              updatedAt: "2026-02-15T00:00:00Z",
+            },
+          ];
+        }
+        return null;
+      });
+
+      await creem.subscriptions.update(ctx as never, {
+        entityId: "user_1",
+        productId: "prod_new",
+        updateBehavior: "period-end",
+      });
+
+      expect(ctx.runMutation).toHaveBeenCalledWith(
+        REFS.cancelPendingScheduledSubscriptionUpdates,
+        {
+          entityId: "user_1",
+          subscriptionId: "sub_1",
+        },
+      );
+      expect(ctx.runMutation).toHaveBeenCalledWith(
+        REFS.cancelScheduledAppPlanAssignment,
+        {
+          subscriptionId: "sub_1",
+          planId: "free",
+        },
+      );
+      expect(ctx.runMutation).toHaveBeenCalledWith(REFS.patchSubscription, {
+        subscriptionId: "sub_1",
+        status: "active",
+        cancelAtPeriodEnd: false,
+      });
+      expect(ctx.scheduler.runAfter).toHaveBeenCalledWith(
+        0,
+        REFS.executeSubscriptionLifecycle,
+        expect.objectContaining({
+          subscriptionId: "sub_1",
+          operation: "resume",
+        }),
+      );
+      expect(ctx.runMutation).toHaveBeenCalledWith(
+        REFS.createScheduledSubscriptionUpdate,
+        expect.objectContaining({
+          entityId: "user_1",
+          subscriptionId: "sub_1",
+          targetProductId: "prod_new",
+        }),
+      );
+    });
+
+    it("resumes a scheduled cancellation before replacing it with an immediate paid update", async () => {
+      const ctx = createMockCtx({
+        [REFS.getCurrentSubscription]: {
+          ...ACTIVE_SUB,
+          status: "scheduled_cancel",
+          cancelAtPeriodEnd: true,
+        },
+      });
+      ctx.runMutation.mockImplementation(async (ref: symbol) => {
+        if (ref === REFS.cancelPendingScheduledSubscriptionUpdates) {
+          return [
+            {
+              entityId: "user_1",
+              subscriptionId: "sub_1",
+              targetPlanId: "free",
+              effectiveAt: "2026-03-01T00:00:00Z",
+              status: "superseded",
+              createdAt: "2026-02-01T00:00:00Z",
+              updatedAt: "2026-02-15T00:00:00Z",
+            },
+          ];
+        }
+        return null;
+      });
+
+      await creem.subscriptions.update(ctx as never, {
+        entityId: "user_1",
+        productId: "prod_new",
+      });
+
+      expect(ctx.scheduler.runAfter).toHaveBeenCalledWith(
+        0,
+        REFS.executeSubscriptionUpdate,
+        expect.objectContaining({
+          subscriptionId: "sub_1",
+          productId: "prod_new",
+          resumeScheduledCancellation: true,
+        }),
+      );
+    });
+
+    it("cancels paid subscription immediately when paid-to-free uses immediate", async () => {
+      const ctx = createMockCtx({
+        [REFS.getCurrentSubscription]: ACTIVE_SUB,
+      });
+      await creem.subscriptions.update(ctx as never, {
+        entityId: "user_1",
+        freePlanId: "free",
+        updateBehavior: "immediate",
+      });
+
+      expect(ctx.runMutation).toHaveBeenCalledWith(REFS.patchSubscription, {
+        subscriptionId: "sub_1",
+        status: "canceled",
+        cancelAtPeriodEnd: false,
+      });
+      expect(ctx.runMutation).toHaveBeenCalledWith(REFS.assignAppPlan, {
+        entityId: "user_1",
+        planId: "free",
+        status: "active",
+        source: "paid_to_free",
+        subscriptionId: "sub_1",
+      });
+      expect(ctx.scheduler.runAfter).toHaveBeenCalledWith(
+        0,
+        REFS.executeSubscriptionLifecycle,
+        expect.objectContaining({
+          subscriptionId: "sub_1",
+          cancelMode: "immediate",
+          previousStatus: "active",
+        }),
+      );
+    });
+
+    it("cancels a scheduled paid-to-free update and resumes the subscription", async () => {
+      const ctx = createMockCtx({
+        [REFS.getCurrentSubscription]: {
+          ...ACTIVE_SUB,
+          cancelAtPeriodEnd: true,
+        },
+      });
+      ctx.runMutation.mockImplementation(async (ref: symbol) => {
+        if (ref === REFS.cancelScheduledSubscriptionUpdate) {
+          return {
+            entityId: "user_1",
+            subscriptionId: "sub_1",
+            targetPlanId: "free",
+            status: "superseded",
+          };
+        }
+        return null;
+      });
+
+      await creem.subscriptions.cancelScheduledUpdate(ctx as never, {
+        entityId: "user_1",
+      });
+
+      expect(ctx.runMutation).toHaveBeenCalledWith(
+        REFS.cancelScheduledSubscriptionUpdate,
+        {
+          entityId: "user_1",
+          subscriptionId: "sub_1",
+        },
+      );
+      expect(ctx.runMutation).toHaveBeenCalledWith(
+        REFS.cancelScheduledAppPlanAssignment,
+        {
+          subscriptionId: "sub_1",
+          planId: "free",
+        },
+      );
+      expect(ctx.runMutation).toHaveBeenCalledWith(REFS.patchSubscription, {
+        subscriptionId: "sub_1",
+        cancelAtPeriodEnd: false,
+        status: "active",
+      });
+      expect(ctx.scheduler.runAfter).toHaveBeenCalledWith(
+        0,
+        REFS.executeSubscriptionLifecycle,
+        expect.objectContaining({
+          subscriptionId: "sub_1",
+          operation: "resume",
         }),
       );
     });
@@ -544,7 +949,7 @@ describe("getBillingModel", () => {
     const result = await creem.getBillingModel(ctx as never, {
       entityId: null,
     });
-    expect(result.billingSnapshot).toBeNull();
+    expect(result.snapshot).toBeNull();
     expect(result.allProducts).toEqual([PRODUCT_1]);
     expect(result.ownedProductIds).toEqual([]);
     expect(result.hasCreemCustomer).toBe(false);
@@ -570,13 +975,17 @@ describe("getBillingModel", () => {
       [REFS.listAllUserSubscriptions]: [ACTIVE_SUB],
       [REFS.listUserSubscriptions]: [ACTIVE_SUB],
       [REFS.getCustomerByEntityId]: { id: "cust_1" },
-      [REFS.listUserOrders]: [{ productId: "prod_1" }],
+      [REFS.listUserOrders]: [
+        { id: "ord_1", productId: "prod_1", status: "paid" },
+        { id: "ord_pending", productId: "prod_pending", status: "pending" },
+      ],
     });
     const result = await creem.getBillingModel(ctx as never, {
       entityId: "user_1",
       user: { _id: "user_1", email: "a@b.com" },
     });
-    expect(result.billingSnapshot).toBeDefined();
+    expect(result.snapshot).toBeDefined();
+    expect(result.snapshot?.subscriptions).toHaveLength(1);
     expect(result.allProducts).toEqual([PRODUCT_1]);
     expect(result.subscriptionProductId).toBe("prod_1");
     expect(result.ownedProductIds).toEqual(["prod_1"]);
@@ -607,33 +1016,56 @@ describe("getBillingModel", () => {
 describe("getBillingSnapshot", () => {
   let creem: Creem;
   beforeEach(() => {
-    creem = new Creem(mockComponent, { apiKey: "k", webhookSecret: "s" });
+    creem = new Creem(mockComponent, {
+      apiKey: "k",
+      webhookSecret: "s",
+      billingCatalog: TEST_BILLING_CATALOG,
+    });
   });
 
-  it("returns a snapshot with no subscription", async () => {
+  it("returns a snapshot with no subscription or orders", async () => {
     const ctx = createMockCtx({
-      [REFS.getCurrentSubscription]: null,
       [REFS.listAllUserSubscriptions]: [],
+      [REFS.listUserOrders]: [],
     });
     const result = await creem.getBillingSnapshot(ctx as never, {
       entityId: "user_1",
     });
-    expect(result).toBeDefined();
-    expect(result.activeCategory).toBeDefined();
+    expect(result.entityId).toBe("user_1");
+    expect(result.catalogVersion).toBe("test");
+    expect(result.subscriptions).toEqual([]);
+    expect(result.orders).toEqual([]);
+    expect(result.availableBillingActions).toContain("checkout");
     expect(result.resolvedAt).toBeDefined();
   });
 
-  it("returns a snapshot with active subscription", async () => {
+  it("returns a snapshot with subscriptions and orders", async () => {
     const ctx = createMockCtx({
-      [REFS.getCurrentSubscription]: ACTIVE_SUB,
-      [REFS.getProduct]: PRODUCT_1,
       [REFS.listAllUserSubscriptions]: [ACTIVE_SUB],
+      [REFS.listUserOrders]: [ORDER_1],
     });
     const result = await creem.getBillingSnapshot(ctx as never, {
       entityId: "user_1",
     });
-    expect(result).toBeDefined();
-    expect(result.activeCategory).toBeDefined();
+    expect(result.subscriptions).toEqual([
+      expect.objectContaining({
+        planId: "pro",
+        productId: "prod_1",
+        subscriptionId: "sub_1",
+        status: "active",
+        units: 1,
+      }),
+    ]);
+    expect(result.orders).toEqual([
+      expect.objectContaining({
+        planId: "pro",
+        orderId: "ord_1",
+        productId: "prod_1",
+        status: "paid",
+      }),
+    ]);
+    expect(result.paymentRecoveryState).toBe("none");
+    expect(result.availableBillingActions).toContain("portal");
     expect(result.resolvedAt).toBeDefined();
   });
 });
@@ -650,7 +1082,7 @@ describe("syncProducts", () => {
     await creem.syncProducts(ctx as never);
     expect(ctx.runAction).toHaveBeenCalledWith(REFS.syncProducts, {
       apiKey: "test_key",
-      serverIdx: undefined,
+      server: undefined,
       serverURL: undefined,
     });
   });
@@ -665,7 +1097,20 @@ describe("verifyWebhook (HMAC path)", () => {
       webhookSecret: "test-webhook-secret",
     });
 
-    const body = '{"eventType":"checkout.completed","object":{}}';
+    const body = JSON.stringify({
+      id: "evt_valid_hmac",
+      eventType: "checkout.completed",
+      created_at: 1772265126979,
+      object: {
+        id: "ch_valid_hmac",
+        object: "checkout",
+        product: "prod_valid_hmac",
+        units: 1,
+        customer: "cust_valid_hmac",
+        status: "completed",
+        mode: "test",
+      },
+    });
     // Generate a valid HMAC signature
     const key = await crypto.subtle.importKey(
       "raw",
@@ -857,6 +1302,68 @@ describe("registerRoutes", () => {
 
   const SECRET = "webhook-test-secret";
 
+  function refundWebhookBody({
+    id,
+    refundAmount,
+    orderAmount,
+    productId = "prod_credits",
+  }: {
+    id: string;
+    refundAmount: number;
+    orderAmount: number;
+    productId?: string;
+  }) {
+    return JSON.stringify({
+      id: `evt_${id}`,
+      eventType: "refund.created",
+      created_at: 1772265452403,
+      object: {
+        id,
+        object: "refund",
+        status: "succeeded",
+        refund_amount: refundAmount,
+        refund_currency: "USD",
+        reason: "requested_by_customer",
+        transaction: {
+          id: `tran_${id}`,
+          object: "transaction",
+          amount: orderAmount,
+          amount_paid: orderAmount,
+          currency: "USD",
+          type: "payment",
+          tax_country: "US",
+          tax_amount: 0,
+          status: refundAmount >= orderAmount ? "refunded" : "partialRefund",
+          refunded_amount: refundAmount,
+          order: `ord_${id}`,
+          customer: "cust_6aVJrSJi8h9r7cGzWPVBF0",
+          created_at: 1772265452403,
+          mode: "test",
+        },
+        order: {
+          object: "order",
+          id: `ord_${id}`,
+          customer: "cust_6aVJrSJi8h9r7cGzWPVBF0",
+          product: productId,
+          amount: orderAmount,
+          currency: "USD",
+          sub_total: orderAmount,
+          tax_amount: 0,
+          amount_due: orderAmount,
+          amount_paid: orderAmount,
+          status: "paid",
+          type: "onetime",
+          transaction: `tran_${id}`,
+          created_at: "2026-02-28T07:52:06.979Z",
+          updated_at: "2026-02-28T07:52:06.979Z",
+          mode: "test",
+        },
+        created_at: 1772265452403,
+        mode: "test",
+      },
+    });
+  }
+
   it("routes to default path /creem/events", () => {
     const creem = new Creem(mockComponent, {
       apiKey: "k",
@@ -882,6 +1389,7 @@ describe("registerRoutes", () => {
 
     // Use real Creem test webhook payload
     const body = JSON.stringify({
+      id: "evt_checkout_order",
       eventType: "checkout.completed",
       created_at: 1772265126979,
       object: {
@@ -947,6 +1455,254 @@ describe("registerRoutes", () => {
     expect(ctx.runMutation).toHaveBeenCalled();
   });
 
+  it("credits customer credits from a catalog grant for a completed checkout", async () => {
+    const creem = new Creem(mockComponent, {
+      apiKey: "k",
+      webhookSecret: SECRET,
+      billingCatalog: defineBillingCatalog({
+        version: "test",
+        plans: [
+          {
+            planId: "ai-credits-100",
+            category: "paid",
+            billingType: "onetime",
+            creemProductIds: { custom: "prod_credits" },
+            creditGrant: { amount: "100" },
+          },
+        ],
+      }),
+    });
+    const creditAccount = vi.fn(async () => ({}));
+    vi.spyOn(creem.sdk as any, "customerCredits", "get").mockReturnValue({
+      listAccounts: vi.fn(async () => ({
+        data: [{ id: "cred_acct_1", name: "credits" }],
+      })),
+      creditAccount,
+    });
+    const { handler } = setupWebhookHandler(creem);
+    const ctx = createMockCtx({
+      [REFS.getCustomerByEntityId]: {
+        id: "cust_6aVJrSJi8h9r7cGzWPVBF0",
+        entityId: "user_1",
+      },
+    });
+
+    const body = JSON.stringify({
+      id: "evt_checkout_credits",
+      eventType: "checkout.completed",
+      created_at: 1772265126979,
+      object: {
+        id: "ch_credits",
+        object: "checkout",
+        request_id: "req_credits",
+        order: {
+          object: "order",
+          id: "ord_credits",
+          customer: "cust_6aVJrSJi8h9r7cGzWPVBF0",
+          product: "prod_credits",
+          amount: 2000,
+          currency: "USD",
+          status: "paid",
+          type: "onetime",
+          transaction: "tran_credits",
+          created_at: "2026-02-28T07:52:06.979Z",
+          updated_at: "2026-02-28T07:52:06.979Z",
+          mode: "test",
+        },
+        product: {
+          id: "prod_credits",
+          object: "product",
+          name: "100 AI Credits",
+          description: "Credits",
+          price: 2000,
+          currency: "USD",
+          billing_type: "onetime",
+          billing_period: "once",
+          status: "active",
+          tax_mode: "exclusive",
+          tax_category: "saas",
+          default_success_url: null,
+          created_at: "2026-02-28T07:52:06.979Z",
+          updated_at: "2026-02-28T07:52:06.979Z",
+          mode: "test",
+        },
+        units: 1,
+        success_url: "https://example.com/success",
+        customer: {
+          id: "cust_6aVJrSJi8h9r7cGzWPVBF0",
+          object: "customer",
+          email: "test-customer@creem.io",
+          country: "US",
+          created_at: "2026-02-28T07:52:06.979Z",
+          updated_at: "2026-02-28T07:52:06.979Z",
+          mode: "test",
+        },
+        status: "completed",
+        mode: "test",
+        metadata: {
+          convexUserId: "user_1",
+          convexBillingEntityId: "user_1",
+        },
+      },
+    });
+
+    const response = await signAndSend(handler!, ctx, body, SECRET);
+
+    expect(response.status).toBe(202);
+    expect(creditAccount).toHaveBeenCalledWith("cred_acct_1", {
+      amount: "100",
+      reference: "checkout:ch_credits",
+      idempotencyKey: "creem:checkout:ch_credits:credits:prod_credits:100",
+    });
+  });
+
+  it("debits catalog-granted customer credits when the order is refunded", async () => {
+    const creem = new Creem(mockComponent, {
+      apiKey: "k",
+      webhookSecret: SECRET,
+      billingCatalog: defineBillingCatalog({
+        version: "test",
+        plans: [
+          {
+            planId: "ai-credits-100",
+            category: "paid",
+            billingType: "onetime",
+            creemProductIds: { custom: "prod_credits" },
+            creditGrant: { amount: "100", refundBehavior: "prorate" },
+          },
+        ],
+      }),
+    });
+    const debitAccount = vi.fn(async () => ({}));
+    vi.spyOn(creem.sdk as any, "customerCredits", "get").mockReturnValue({
+      listAccounts: vi.fn(async () => ({
+        data: [{ id: "cred_acct_1", name: "credits" }],
+      })),
+      debitAccount,
+    });
+    const { handler } = setupWebhookHandler(creem);
+    const ctx = createMockCtx();
+
+    const body = refundWebhookBody({
+      id: "ref_credits",
+      refundAmount: 1000,
+      orderAmount: 2000,
+    });
+
+    const response = await signAndSend(handler!, ctx, body, SECRET);
+
+    expect(response.status).toBe(202);
+    expect(debitAccount).toHaveBeenCalledWith("cred_acct_1", {
+      amount: "50",
+      reference: "refund:ref_credits",
+      idempotencyKey: "creem:refund:ref_credits:credits:prod_credits:50",
+    });
+  });
+
+  it("does not debit catalog-granted credits for partial refunds by default", async () => {
+    const creem = new Creem(mockComponent, {
+      apiKey: "k",
+      webhookSecret: SECRET,
+      billingCatalog: defineBillingCatalog({
+        version: "test",
+        plans: [
+          {
+            planId: "ai-credits-100",
+            category: "paid",
+            billingType: "onetime",
+            creemProductIds: { custom: "prod_credits" },
+            creditGrant: { amount: "100" },
+          },
+        ],
+      }),
+    });
+    const debitAccount = vi.fn(async () => ({}));
+    vi.spyOn(creem.sdk as any, "customerCredits", "get").mockReturnValue({
+      listAccounts: vi.fn(async () => ({
+        data: [{ id: "cred_acct_1", name: "credits" }],
+      })),
+      debitAccount,
+    });
+    const { handler } = setupWebhookHandler(creem);
+    const ctx = createMockCtx();
+
+    const body = refundWebhookBody({
+      id: "ref_partial_credits",
+      refundAmount: 1000,
+      orderAmount: 2000,
+    });
+
+    const response = await signAndSend(handler!, ctx, body, SECRET);
+
+    expect(response.status).toBe(202);
+    expect(debitAccount).not.toHaveBeenCalled();
+  });
+
+  it("debits the full catalog credit grant for full refunds by default", async () => {
+    const creem = new Creem(mockComponent, {
+      apiKey: "k",
+      webhookSecret: SECRET,
+      billingCatalog: defineBillingCatalog({
+        version: "test",
+        plans: [
+          {
+            planId: "ai-credits-100",
+            category: "paid",
+            billingType: "onetime",
+            creemProductIds: { custom: "prod_credits" },
+            creditGrant: { amount: "100" },
+          },
+        ],
+      }),
+    });
+    const debitAccount = vi.fn(async () => ({}));
+    vi.spyOn(creem.sdk as any, "customerCredits", "get").mockReturnValue({
+      listAccounts: vi.fn(async () => ({
+        data: [{ id: "cred_acct_1", name: "credits" }],
+      })),
+      debitAccount,
+    });
+    const { handler } = setupWebhookHandler(creem);
+    const ctx = createMockCtx();
+
+    const body = refundWebhookBody({
+      id: "ref_full_credits",
+      refundAmount: 2000,
+      orderAmount: 2000,
+    });
+
+    const response = await signAndSend(handler!, ctx, body, SECRET);
+
+    expect(response.status).toBe(202);
+    expect(debitAccount).toHaveBeenCalledWith("cred_acct_1", {
+      amount: "100",
+      reference: "refund:ref_full_credits",
+      idempotencyKey: "creem:refund:ref_full_credits:credits:prod_credits:100",
+    });
+  });
+
+  it("tolerates Customer Credits response validation drift after debit requests", async () => {
+    const creem = new Creem(mockComponent, {
+      apiKey: "k",
+      webhookSecret: SECRET,
+    });
+    vi.spyOn(creem.sdk as any, "customerCredits", "get").mockReturnValue({
+      debitAccount: vi.fn(async () => {
+        const error = new Error("Response validation failed");
+        error.name = "ResponseValidationError";
+        throw error;
+      }),
+    });
+
+    await expect(
+      creem.credits.debit("cred_acct_1", {
+        amount: "10",
+        reference: "usage:req_1",
+        idempotencyKey: "usage:req_1",
+      }),
+    ).resolves.toBeNull();
+  });
+
   it("handles subscription.active — updates subscription", async () => {
     const creem = new Creem(mockComponent, {
       apiKey: "k",
@@ -957,6 +1713,7 @@ describe("registerRoutes", () => {
 
     // Use real Creem test webhook payload
     const body = JSON.stringify({
+      id: "evt_subscription_active",
       eventType: "subscription.active",
       created_at: 1772265324184,
       object: {
@@ -1003,158 +1760,12 @@ describe("registerRoutes", () => {
 
     const response = await signAndSend(handler!, ctx, body, SECRET);
     expect(response.status).toBe(202);
-    // Should update (not create, since eventType is subscription.active, not subscription.created)
     expect(ctx.runMutation).toHaveBeenCalledWith(
       REFS.updateSubscription,
       expect.objectContaining({
         subscription: expect.objectContaining({
           id: "sub_35c5ooVUuIUtru83zXjrjC",
         }),
-      }),
-    );
-  });
-
-  it("handles subscription.created — calls createSubscription", async () => {
-    const creem = new Creem(mockComponent, {
-      apiKey: "k",
-      webhookSecret: SECRET,
-    });
-    const { handler } = setupWebhookHandler(creem);
-    const ctx = createMockCtx();
-
-    // Use real-shaped payload with eventType=subscription.created
-    const body = JSON.stringify({
-      eventType: "subscription.created",
-      created_at: 1772265324184,
-      object: {
-        id: "sub_new_123",
-        object: "subscription",
-        product: {
-          id: "prod_3prhYLElQzQaZMq7pePQqf",
-          object: "product",
-          name: "Test Subscription Product",
-          description: "A test product",
-          price: 2999,
-          currency: "USD",
-          billing_type: "recurring",
-          billing_period: "once",
-          status: "active",
-          tax_mode: "exclusive",
-          tax_category: "saas",
-          default_success_url: null,
-          created_at: "2026-02-28T07:55:24.184Z",
-          updated_at: "2026-02-28T07:55:24.184Z",
-          mode: "test",
-        },
-        customer: {
-          id: "cust_50fklVtISQkWoAydmZ1LJb",
-          object: "customer",
-          email: "test-customer@creem.io",
-          name: "Test Customer",
-          country: "US",
-          created_at: "2026-02-28T07:55:24.184Z",
-          updated_at: "2026-02-28T07:55:24.184Z",
-          mode: "test",
-        },
-        collection_method: "charge_automatically",
-        status: "active",
-        current_period_start_date: "2026-02-28T07:55:24.184Z",
-        current_period_end_date: "2026-03-30T07:55:24.184Z",
-        canceled_at: null,
-        created_at: "2026-02-28T07:55:24.184Z",
-        updated_at: "2026-02-28T07:55:24.184Z",
-        mode: "test",
-        metadata: { convexUserId: "user_2" },
-      },
-    });
-
-    const response = await signAndSend(handler!, ctx, body, SECRET);
-    expect(response.status).toBe(202);
-    expect(ctx.runMutation).toHaveBeenCalledWith(
-      REFS.createSubscription,
-      expect.objectContaining({
-        subscription: expect.objectContaining({ id: "sub_new_123" }),
-      }),
-    );
-  });
-
-  it("handles product.created — calls createProduct", async () => {
-    const creem = new Creem(mockComponent, {
-      apiKey: "k",
-      webhookSecret: SECRET,
-    });
-    const { handler } = setupWebhookHandler(creem);
-    const ctx = createMockCtx();
-
-    // product.* events have the product directly in object
-    // But parseProduct may fail on simplified data — the handler logs warning and skips
-    // Use real product shape from the checkout payload
-    const body = JSON.stringify({
-      eventType: "product.created",
-      object: {
-        id: "prod_35PR89LmiAjsR8JJwO7uM7",
-        object: "product",
-        name: "Test Product",
-        description: "A test product for webhook simulation",
-        price: 2999,
-        currency: "USD",
-        billing_type: "onetime",
-        billing_period: "once",
-        status: "active",
-        tax_mode: "exclusive",
-        tax_category: "saas",
-        default_success_url: null,
-        created_at: "2026-02-28T07:52:06.979Z",
-        updated_at: "2026-02-28T07:52:06.979Z",
-        mode: "test",
-      },
-    });
-
-    const response = await signAndSend(handler!, ctx, body, SECRET);
-    expect(response.status).toBe(202);
-    expect(ctx.runMutation).toHaveBeenCalledWith(
-      REFS.createProduct,
-      expect.objectContaining({
-        product: expect.objectContaining({ id: "prod_35PR89LmiAjsR8JJwO7uM7" }),
-      }),
-    );
-  });
-
-  it("handles product.updated — calls updateProduct", async () => {
-    const creem = new Creem(mockComponent, {
-      apiKey: "k",
-      webhookSecret: SECRET,
-    });
-    const { handler } = setupWebhookHandler(creem);
-    const ctx = createMockCtx();
-
-    const body = JSON.stringify({
-      eventType: "product.updated",
-      object: {
-        id: "prod_35PR89LmiAjsR8JJwO7uM7",
-        object: "product",
-        name: "Updated Product",
-        description: "Updated description",
-        price: 1999,
-        currency: "USD",
-        billing_type: "onetime",
-        billing_period: "once",
-        status: "active",
-        tax_mode: "exclusive",
-        tax_category: "saas",
-        default_success_url: null,
-        created_at: "2026-02-28T07:52:06.979Z",
-        updated_at: "2026-02-28T08:00:00.000Z",
-        mode: "test",
-      },
-    });
-
-    const response = await signAndSend(handler!, ctx, body, SECRET);
-    expect(response.status).toBe(202);
-    expect(ctx.runMutation).toHaveBeenCalledWith(
-      REFS.updateProduct,
-      expect.objectContaining({
-        product: expect.objectContaining({ id: "prod_35PR89LmiAjsR8JJwO7uM7" }),
       }),
     );
   });
@@ -1170,9 +1781,11 @@ describe("registerRoutes", () => {
     });
     const ctx = createMockCtx();
 
-    const body = JSON.stringify({
-      eventType: "refund.created",
-      object: { id: "ref_1", object: "refund" },
+    const body = refundWebhookBody({
+      id: "ref_1",
+      refundAmount: 1000,
+      orderAmount: 1000,
+      productId: "prod_1",
     });
 
     const response = await signAndSend(handler!, ctx, body, SECRET);
@@ -1192,6 +1805,7 @@ describe("registerRoutes", () => {
     const ctx = createMockCtx();
 
     const body = JSON.stringify({
+      id: "evt_subscription_canceled",
       eventType: "subscription.canceled",
       created_at: 1772265355057,
       object: {
@@ -1292,7 +1906,7 @@ describe("api() convenience exports", () => {
       });
       const handler = extractHandler(apiExports.uiModel as never);
       const result = await handler(ctx, {});
-      expect(result.billingSnapshot).toBeNull();
+      expect(result.snapshot).toBeNull();
       expect(result.allProducts).toEqual([PRODUCT_1]);
     });
 
@@ -1317,6 +1931,59 @@ describe("api() convenience exports", () => {
     });
   });
 
+  describe("transactions.search", () => {
+    it("returns the first SDK page result without the pagination iterator", async () => {
+      resolve.mockResolvedValue({
+        userId: "user_1",
+        email: "a@b.com",
+        entityId: "user_1",
+      });
+      const ctx = createMockCtx({
+        [REFS.getCustomerByEntityId]: { id: "cust_1" },
+      });
+      const transactionList = {
+        items: [
+          {
+            id: "tran_1",
+            mode: "test",
+            object: "transaction",
+            amount: 2999,
+            currency: "USD",
+            type: "payment",
+            status: "paid",
+            createdAt: 1780135200,
+          },
+        ],
+        pagination: {
+          totalRecords: 1,
+          totalPages: 1,
+          currentPage: 1,
+          nextPage: null,
+          prevPage: null,
+        },
+      };
+      const search = vi.fn(async () => ({
+        result: transactionList,
+        next: vi.fn(),
+        [Symbol.asyncIterator]: vi.fn(),
+      }));
+      creem.sdk.transactions.search = search as never;
+
+      const handler = extractHandler(apiExports.transactions.search as never);
+      const result = await handler(ctx, { pageNumber: 1, pageSize: 10 });
+
+      expect(search).toHaveBeenCalledWith(
+        "cust_1",
+        undefined,
+        undefined,
+        1,
+        10,
+      );
+      expect(result).toEqual(transactionList);
+      expect(result).not.toHaveProperty("next");
+    });
+  });
+
   describe("snapshot", () => {
     it("returns null when resolve throws", async () => {
       resolve.mockRejectedValue(new Error("Not authenticated"));
@@ -1337,12 +2004,25 @@ describe("api() convenience exports", () => {
     it("returns snapshot when resolve succeeds", async () => {
       resolve.mockResolvedValue({ entityId: "user_1" });
       const ctx = createMockCtx({
-        [REFS.getCurrentSubscription]: null,
-        [REFS.listAllUserSubscriptions]: [],
+        [REFS.listAllUserSubscriptions]: [ACTIVE_SUB],
+        [REFS.listUserOrders]: [ORDER_1],
       });
       const handler = extractHandler(apiExports.snapshot as never);
       const result = await handler(ctx, {});
-      expect(result).toBeDefined();
+      expect(result.subscriptions).toEqual([
+        expect.objectContaining({
+          productId: "prod_1",
+          subscriptionId: "sub_1",
+          status: "active",
+        }),
+      ]);
+      expect(result.orders).toEqual([
+        expect.objectContaining({
+          orderId: "ord_1",
+          productId: "prod_1",
+          status: "paid",
+        }),
+      ]);
       expect(result.resolvedAt).toBeDefined();
     });
   });
@@ -1361,6 +2041,107 @@ describe("api() convenience exports", () => {
       );
     });
 
+    it("supports period-end updates through generated API", async () => {
+      resolve.mockResolvedValue({ entityId: "user_1" });
+      const ctx = createMockCtx({
+        [REFS.getCurrentSubscription]: ACTIVE_SUB,
+      });
+      const handler = extractHandler(apiExports.subscriptions.update as never);
+      await handler(ctx, {
+        productId: "prod_basic",
+        updateBehavior: "period-end",
+      });
+
+      expect(ctx.runMutation).toHaveBeenCalledWith(
+        REFS.createScheduledSubscriptionUpdate,
+        expect.objectContaining({
+          entityId: "user_1",
+          subscriptionId: "sub_1",
+          targetProductId: "prod_basic",
+        }),
+      );
+      expect(ctx.scheduler.runAt).toHaveBeenCalledWith(
+        new Date("2026-03-01T00:00:00Z"),
+        REFS.applyScheduledSubscriptionUpdate,
+        expect.objectContaining({ scheduledUpdateId: "scheduled_update_1" }),
+      );
+    });
+
+    it("supports paid-to-free period-end updates through generated API", async () => {
+      resolve.mockResolvedValue({ entityId: "user_1" });
+      const ctx = createMockCtx({
+        [REFS.getCurrentSubscription]: ACTIVE_SUB,
+      });
+      const handler = extractHandler(apiExports.subscriptions.update as never);
+      await handler(ctx, {
+        freePlanId: "free",
+        updateBehavior: "period-end",
+      });
+
+      expect(ctx.runMutation).toHaveBeenCalledWith(
+        REFS.createScheduledSubscriptionUpdate,
+        expect.objectContaining({
+          entityId: "user_1",
+          subscriptionId: "sub_1",
+          targetPlanId: "free",
+        }),
+      );
+      expect(ctx.runMutation).toHaveBeenCalledWith(REFS.assignAppPlan, {
+        entityId: "user_1",
+        planId: "free",
+        status: "scheduled",
+        startsAt: "2026-03-01T00:00:00Z",
+        source: "paid_to_free",
+        subscriptionId: "sub_1",
+      });
+      expect(ctx.runMutation).toHaveBeenCalledWith(REFS.patchSubscription, {
+        subscriptionId: "sub_1",
+        cancelAtPeriodEnd: true,
+      });
+      expect(ctx.scheduler.runAfter).toHaveBeenCalledWith(
+        0,
+        REFS.executeSubscriptionLifecycle,
+        expect.objectContaining({
+          subscriptionId: "sub_1",
+          cancelMode: "scheduled",
+          scheduledUpdateId: "scheduled_update_1",
+        }),
+      );
+    });
+
+    it("supports paid-to-free immediate updates through generated API", async () => {
+      resolve.mockResolvedValue({ entityId: "user_1" });
+      const ctx = createMockCtx({
+        [REFS.getCurrentSubscription]: ACTIVE_SUB,
+      });
+      const handler = extractHandler(apiExports.subscriptions.update as never);
+      await handler(ctx, {
+        freePlanId: "free",
+        updateBehavior: "immediate",
+      });
+
+      expect(ctx.runMutation).toHaveBeenCalledWith(REFS.patchSubscription, {
+        subscriptionId: "sub_1",
+        status: "canceled",
+        cancelAtPeriodEnd: false,
+      });
+      expect(ctx.runMutation).toHaveBeenCalledWith(REFS.assignAppPlan, {
+        entityId: "user_1",
+        planId: "free",
+        status: "active",
+        source: "paid_to_free",
+        subscriptionId: "sub_1",
+      });
+      expect(ctx.scheduler.runAfter).toHaveBeenCalledWith(
+        0,
+        REFS.executeSubscriptionLifecycle,
+        expect.objectContaining({
+          subscriptionId: "sub_1",
+          cancelMode: "immediate",
+        }),
+      );
+    });
+
     it("throws when both productId and units provided", async () => {
       resolve.mockResolvedValue({ entityId: "user_1" });
       const ctx = createMockCtx();
@@ -1375,6 +2156,30 @@ describe("api() convenience exports", () => {
       const ctx = createMockCtx();
       const handler = extractHandler(apiExports.subscriptions.update as never);
       await expect(handler(ctx, {})).rejects.toThrow();
+    });
+  });
+
+  describe("subscriptions.cancelScheduledUpdate", () => {
+    it("cancels a scheduled update via resolved entityId", async () => {
+      resolve.mockResolvedValue({ entityId: "user_1" });
+      const ctx = createMockCtx({
+        [REFS.getCurrentSubscription]: {
+          ...ACTIVE_SUB,
+          cancelAtPeriodEnd: true,
+        },
+      });
+      const handler = extractHandler(
+        apiExports.subscriptions.cancelScheduledUpdate as never,
+      );
+      await handler(ctx, {});
+
+      expect(ctx.runMutation).toHaveBeenCalledWith(
+        REFS.cancelScheduledSubscriptionUpdate,
+        {
+          entityId: "user_1",
+          subscriptionId: "sub_1",
+        },
+      );
     });
   });
 
@@ -1549,6 +2354,23 @@ describe("api() convenience exports", () => {
       const handler = extractHandler(apiExports.orders.list as never);
       const result = await handler(ctx, {});
       expect(result).toEqual(orders);
+    });
+  });
+
+  describe("credits.getBalance", () => {
+    it("throws a ConvexError with user-facing data when checkout is required", async () => {
+      resolve.mockResolvedValue({ entityId: "user_1" });
+      const ctx = createMockCtx({
+        [REFS.getCustomerByEntityId]: null,
+      });
+      const handler = extractHandler(apiExports.credits.getBalance as never);
+
+      await expect(handler(ctx, {})).rejects.toMatchObject({
+        data: {
+          message: "Customer not found — complete a checkout first",
+        },
+      });
+      await expect(handler(ctx, {})).rejects.toBeInstanceOf(ConvexError);
     });
   });
 });
