@@ -6,7 +6,7 @@
 - Website: https://creem.io
 - API Base: https://api.creem.io (production) | https://test-api.creem.io (sandbox)
 - Authentication: x-api-key header
-- SDKs: TypeScript, Next.js adapter
+- SDKs: TypeScript, Next.js adapter, Better Auth plugin, Convex component
 
 ## What is a Merchant of Record?
 A Merchant of Record is the legal entity that sells goods or services to end customers. Creem acts as the MoR, handling all tax compliance, payment processing, and regulatory requirements globally.

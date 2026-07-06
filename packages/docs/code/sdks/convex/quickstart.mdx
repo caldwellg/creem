@@ -1,0 +1,289 @@
+---
+title: "Quickstart"
+description: "Set up Creem billing in your Convex app in five minutes — backend sync, webhook, and a working subscription pricing page."
+---
+
+`@creem_io/convex` connects your Convex backend to Creem: webhooks keep billing state synced into your Convex database, and pre-built React/Svelte widgets handle checkout, plan switching, and cancellation. This page gets you from zero to a working two-plan pricing page.
+
+<Note>
+  Integrating with an AI agent, or migrating from another billing provider? Use the [Integration
+  Guide](/code/sdks/convex/integration) — the complete setup sequence in one self-contained page,
+  with validation steps.
+</Note>
+
+## Backend
+
+<Steps>
+  <Step title="Install">
+
+```bash
+npm install @creem_io/convex convex creem
+```
+
+  </Step>
+  <Step title="Register the component">
+
+```ts
+// convex/convex.config.ts
+import { defineApp } from "convex/server";
+import creem from "@creem_io/convex/convex.config";
+
+const app = defineApp();
+app.use(creem);
+
+export default app;
+```
+
+  </Step>
+  <Step title="Set secrets">
+
+```bash
+npx convex env set CREEM_API_KEY <your_creem_api_key>
+npx convex env set CREEM_WEBHOOK_SECRET <your_creem_webhook_signing_secret>
+npx convex env set CREEM_SERVER test
+```
+
+Both keys are in the [Developers section](https://creem.io/dashboard/developers) of your dashboard — toggle [Test Mode](/getting-started/test-mode#activating-test-mode) to get test keys. Set `CREEM_SERVER=prod` (or omit it) when you go live.
+
+  </Step>
+  <Step title="Export the billing API">
+
+The `resolve` callback maps your authenticated session to a billing entity — replace it with your real auth logic:
+
+```ts
+// convex/billing.ts
+import { Creem, type ApiResolver } from "@creem_io/convex";
+import { api, components } from "./_generated/api";
+import { internalAction } from "./_generated/server";
+
+export const creem = new Creem(components.creem);
+
+const resolve: ApiResolver = async (ctx) => {
+  const user = await ctx.runQuery(api.users.currentUser);
+  return { userId: user._id, email: user.email, entityId: user._id };
+};
+
+const { uiModel, checkouts, subscriptions, customers } = creem.api({ resolve });
+
+export { uiModel };
+export const checkoutsCreate = checkouts.create;
+export const subscriptionsUpdate = subscriptions.update;
+export const subscriptionsCancel = subscriptions.cancel;
+export const subscriptionsResume = subscriptions.resume;
+export const customersPortalUrl = customers.portalUrl;
+
+export const syncBillingProducts = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    await creem.syncProducts(ctx);
+  },
+});
+```
+
+  </Step>
+  <Step title="Register the webhook">
+
+```ts
+// convex/http.ts
+import { httpRouter } from "convex/server";
+import { creem } from "./billing";
+
+const http = httpRouter();
+creem.registerRoutes(http);
+export default http;
+```
+
+In your Creem dashboard, set the webhook endpoint to your **Convex site URL** plus `/creem/events`:
+
+```text
+https://<your-deployment>.convex.site/creem/events
+```
+
+  </Step>
+  <Step title="Sync products">
+
+```bash
+npx convex run billing:syncBillingProducts
+```
+
+**Backend done** — billing state now syncs into Convex automatically.
+
+  </Step>
+</Steps>
+
+## Frontend
+
+<Steps>
+  <Step title="Install UI dependencies">
+
+The widgets are built on [Ark UI](https://ark-ui.com) headless primitives. Add the adapter for your framework to your existing app:
+
+<Tabs>
+  <Tab title="React">
+
+```bash
+npm install @ark-ui/react
+```
+
+  </Tab>
+  <Tab title="Svelte">
+
+```bash
+npm install convex-svelte @ark-ui/svelte
+```
+
+  </Tab>
+</Tabs>
+
+  </Step>
+  <Step title="Set up Tailwind and import styles">
+
+The widgets require **Tailwind CSS v4**. If your project doesn't have it yet, follow the [Tailwind framework guide](https://tailwindcss.com/docs/installation/framework-guides) for your setup — the steps differ per framework.
+
+Then add the component styles to your CSS entry point, after the Tailwind import:
+
+```css
+@import "tailwindcss";
+@import "@creem_io/convex/styles";
+```
+
+  </Step>
+  <Step title="Define your plans">
+
+Map stable plan IDs to your Creem product IDs:
+
+```ts
+// src/billingCatalog.ts
+import { defineBillingCatalog } from "@creem_io/convex/react"; // or /svelte
+
+export const billingCatalog = defineBillingCatalog({
+  version: "1",
+  plans: [
+    {
+      planId: "basic",
+      category: "paid",
+      billingType: "recurring",
+      creemProductIds: {
+        "every-month": import.meta.env.VITE_CREEM_BASIC_MONTHLY,
+      },
+    },
+    {
+      planId: "premium",
+      category: "paid",
+      billingType: "recurring",
+      recommended: true,
+      creemProductIds: {
+        "every-month": import.meta.env.VITE_CREEM_PREMIUM_MONTHLY,
+      },
+    },
+  ],
+} as const);
+```
+
+Titles, descriptions, and prices resolve automatically from the synced Creem product data.
+
+  </Step>
+  <Step title="Render the pricing page">
+
+Wrap your billing UI once in `CreemConvexProvider` — the widgets read everything from it:
+
+<Tabs>
+  <Tab title="React">
+
+```tsx
+// Inside your normal Convex React client setup (<ConvexProvider>)
+import {
+  CreemConvexProvider,
+  Subscription,
+  BillingPortal,
+  plansOf,
+  type ConnectedBillingApi,
+} from "@creem_io/convex/react";
+import { api } from "../convex/_generated/api";
+import { billingCatalog } from "./billingCatalog";
+
+const connectedApi: ConnectedBillingApi = {
+  uiModel: api.billing.uiModel,
+  checkouts: { create: api.billing.checkoutsCreate },
+  subscriptions: {
+    update: api.billing.subscriptionsUpdate,
+    cancel: api.billing.subscriptionsCancel,
+    resume: api.billing.subscriptionsResume,
+  },
+  customers: { portalUrl: api.billing.customersPortalUrl },
+};
+
+export function PricingPage() {
+  return (
+    <CreemConvexProvider api={connectedApi} catalog={billingCatalog}>
+      <Subscription.Root plans={plansOf(billingCatalog, ["basic", "premium"])} />
+      <BillingPortal />
+    </CreemConvexProvider>
+  );
+}
+```
+
+  </Tab>
+  <Tab title="Svelte">
+
+```svelte
+<script lang="ts">
+  import { setupConvex } from "convex-svelte";
+  import {
+    CreemConvexProvider,
+    Subscription,
+    BillingPortal,
+    plansOf,
+    type ConnectedBillingApi,
+  } from "@creem_io/convex/svelte";
+  import { api } from "../convex/_generated/api.js";
+  import { billingCatalog } from "./billingCatalog";
+
+  setupConvex(import.meta.env.VITE_CONVEX_URL);
+
+  const connectedApi: ConnectedBillingApi = {
+    uiModel: api.billing.uiModel,
+    checkouts: { create: api.billing.checkoutsCreate },
+    subscriptions: {
+      update: api.billing.subscriptionsUpdate,
+      cancel: api.billing.subscriptionsCancel,
+      resume: api.billing.subscriptionsResume,
+    },
+    customers: { portalUrl: api.billing.customersPortalUrl },
+  };
+</script>
+
+<CreemConvexProvider api={connectedApi} catalog={billingCatalog}>
+  <Subscription.Root plans={plansOf(billingCatalog, ["basic", "premium"])} />
+  <BillingPortal />
+</CreemConvexProvider>
+```
+
+  </Tab>
+</Tabs>
+
+**That's it.** You have a pricing page with live prices, checkout, a "Current plan" badge, plan switching, and cancel/resume — all reactive through Convex. Try it with a [test card](/getting-started/test-mode#test-cards).
+
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Subscriptions" icon="repeat" href="/code/sdks/convex/subscriptions">
+    Billing cycles, trials, unit-based pricing, and scheduled changes
+  </Card>
+  <Card
+    title="One-Time Products & Credits"
+    icon="coins"
+    href="/code/sdks/convex/one-time-and-credits"
+  >
+    Owned products, consumables, credit packs, and upgrade paths
+  </Card>
+  <Card title="Entitlements & Account UI" icon="lock-open" href="/code/sdks/convex/entitlements">
+    Feature gating, usage limits, billing history, and payment recovery
+  </Card>
+  <Card title="Advanced" icon="wrench" href="/code/sdks/convex/advanced">
+    Custom auth/RBAC, entity model, webhook middleware, and migration
+  </Card>
+</CardGroup>
