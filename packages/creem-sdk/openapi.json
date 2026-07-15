@@ -2526,7 +2526,7 @@
     "/v1/products/{id}": {
       "get": {
         "operationId": "getProduct",
-        "x-speakeasy-name-override": "get",
+        "x-speakeasy-name-override": "getById",
         "summary": "Retrieve a product",
         "description": "Retrieve a single product by its ID.",
         "parameters": [

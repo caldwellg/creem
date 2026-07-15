@@ -40,7 +40,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Products"],
+        "tags": [
+          "Products"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -85,7 +87,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Products"],
+        "tags": [
+          "Products"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -172,7 +176,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Products"],
+        "tags": [
+          "Products"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -250,7 +256,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Customers"],
+        "tags": [
+          "Customers"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -318,7 +326,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Customers"],
+        "tags": [
+          "Customers"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -386,7 +396,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Customers"],
+        "tags": [
+          "Customers"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -454,7 +466,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Customers"],
+        "tags": [
+          "Customers"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -511,7 +525,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Customers"],
+        "tags": [
+          "Customers"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -556,7 +572,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Customers"],
+        "tags": [
+          "Customers"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -600,7 +618,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Customers"],
+        "tags": [
+          "Customers"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -647,7 +667,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Customers"],
+        "tags": [
+          "Customers"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -694,7 +716,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Subscriptions"],
+        "tags": [
+          "Subscriptions"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -772,7 +796,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Subscriptions"],
+        "tags": [
+          "Subscriptions"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -829,7 +855,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Subscriptions"],
+        "tags": [
+          "Subscriptions"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -886,7 +914,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Subscriptions"],
+        "tags": [
+          "Subscriptions"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -943,7 +973,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Subscriptions"],
+        "tags": [
+          "Subscriptions"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -989,7 +1021,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Subscriptions"],
+        "tags": [
+          "Subscriptions"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -1035,7 +1069,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Subscriptions"],
+        "tags": [
+          "Subscriptions"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -1082,7 +1118,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Checkouts"],
+        "tags": [
+          "Checkouts"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -1127,7 +1165,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Checkouts"],
+        "tags": [
+          "Checkouts"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -1174,7 +1214,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Licenses"],
+        "tags": [
+          "Licenses"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -1221,7 +1263,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Licenses"],
+        "tags": [
+          "Licenses"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -1268,7 +1312,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Licenses"],
+        "tags": [
+          "Licenses"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -1340,7 +1386,10 @@
             "in": "query",
             "description": "Filter by discount status.",
             "schema": {
-              "enum": ["active", "deleted"],
+              "enum": [
+                "active",
+                "deleted"
+              ],
               "type": "string"
             }
           },
@@ -1350,7 +1399,10 @@
             "in": "query",
             "description": "Filter by discount type.",
             "schema": {
-              "enum": ["percentage", "fixed"],
+              "enum": [
+                "percentage",
+                "fixed"
+              ],
               "type": "string"
             }
           },
@@ -1396,7 +1448,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Discounts"],
+        "tags": [
+          "Discounts"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -1453,7 +1507,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Discounts"],
+        "tags": [
+          "Discounts"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -1498,7 +1554,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Discounts"],
+        "tags": [
+          "Discounts"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -1544,7 +1602,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Discounts"],
+        "tags": [
+          "Discounts"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -1591,7 +1651,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Transactions"],
+        "tags": [
+          "Transactions"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -1699,7 +1761,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Transactions"],
+        "tags": [
+          "Transactions"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -1738,7 +1802,11 @@
             "in": "query",
             "description": "Groups time-series data into buckets of this size. Requires startDate and endDate. Returns a periods array with one entry per bucket containing grossRevenue and netRevenue.",
             "schema": {
-              "enum": ["day", "week", "month"],
+              "enum": [
+                "day",
+                "week",
+                "month"
+              ],
               "type": "string"
             }
           },
@@ -1747,7 +1815,10 @@
             "required": true,
             "in": "query",
             "schema": {
-              "enum": ["EUR", "USD"],
+              "enum": [
+                "EUR",
+                "USD"
+              ],
               "type": "string"
             }
           }
@@ -1773,7 +1844,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Stats"],
+        "tags": [
+          "Stats"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -1820,7 +1893,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Moderation"],
+        "tags": [
+          "Moderation"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -1867,7 +1942,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Customer Credits - Accounts (Experimental)"],
+        "tags": [
+          "Customer Credits - Accounts (Experimental)"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -1962,7 +2039,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Customer Credits - Accounts (Experimental)"],
+        "tags": [
+          "Customer Credits - Accounts (Experimental)"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -2008,7 +2087,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Customer Credits - Accounts (Experimental)"],
+        "tags": [
+          "Customer Credits - Accounts (Experimental)"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -2064,7 +2145,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Customer Credits - Accounts (Experimental)"],
+        "tags": [
+          "Customer Credits - Accounts (Experimental)"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -2159,7 +2242,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Customer Credits - Accounts (Experimental)"],
+        "tags": [
+          "Customer Credits - Accounts (Experimental)"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -2215,7 +2300,9 @@
             }
           }
         },
-        "tags": ["Customer Credits - Accounts (Experimental)"],
+        "tags": [
+          "Customer Credits - Accounts (Experimental)"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -2271,7 +2358,9 @@
             }
           }
         },
-        "tags": ["Customer Credits - Accounts (Experimental)"],
+        "tags": [
+          "Customer Credits - Accounts (Experimental)"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -2337,7 +2426,9 @@
             }
           }
         },
-        "tags": ["Customer Credits - Accounts (Experimental)"],
+        "tags": [
+          "Customer Credits - Accounts (Experimental)"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -2403,7 +2494,9 @@
             }
           }
         },
-        "tags": ["Customer Credits - Accounts (Experimental)"],
+        "tags": [
+          "Customer Credits - Accounts (Experimental)"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -2459,7 +2552,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Customer Credits - Accounts (Experimental)"],
+        "tags": [
+          "Customer Credits - Accounts (Experimental)"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -2515,7 +2610,9 @@
             }
           }
         },
-        "tags": ["Customer Credits - Accounts (Experimental)"],
+        "tags": [
+          "Customer Credits - Accounts (Experimental)"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -2526,7 +2623,7 @@
     "/v1/products/{id}": {
       "get": {
         "operationId": "getProduct",
-        "x-speakeasy-name-override": "get",
+        "x-speakeasy-name-override": "getById",
         "summary": "Retrieve a product",
         "description": "Retrieve a single product by its ID.",
         "parameters": [
@@ -2561,7 +2658,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Products"],
+        "tags": [
+          "Products"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -2615,7 +2714,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Products"],
+        "tags": [
+          "Products"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -2659,7 +2760,9 @@
             "description": "Not Found - Resource does not exist"
           }
         },
-        "tags": ["Products"],
+        "tags": [
+          "Products"
+        ],
         "security": [
           {
             "ApiKey": []
@@ -2709,12 +2812,21 @@
       "EnvironmentMode": {
         "type": "string",
         "description": "String representing the environment.",
-        "enum": ["test", "prod", "sandbox"]
+        "enum": [
+          "test",
+          "prod",
+          "sandbox"
+        ]
       },
       "ProductFeatureType": {
         "type": "string",
         "description": "The type of the feature: privateNote (custom note), file (downloadable files), or licenseKey (license key).",
-        "enum": ["custom", "file", "licenseKey", "customerCredits"]
+        "enum": [
+          "custom",
+          "file",
+          "licenseKey",
+          "customerCredits"
+        ]
       },
       "FeatureEntity": {
         "type": "object",
@@ -2734,12 +2846,19 @@
             "example": "Access to premium course materials."
           }
         },
-        "required": ["id", "type", "description"]
+        "required": [
+          "id",
+          "type",
+          "description"
+        ]
       },
       "ProductBillingType": {
         "type": "string",
         "description": "Indicates the billing method for the customer. It can either be a `recurring` billing cycle or a `onetime` payment.",
-        "enum": ["recurring", "onetime"]
+        "enum": [
+          "recurring",
+          "onetime"
+        ]
       },
       "ProductBillingPeriod": {
         "type": "string",
@@ -2756,22 +2875,35 @@
       "ProductStatus": {
         "type": "string",
         "description": "Status of the product",
-        "enum": ["active", "archived"]
+        "enum": [
+          "active",
+          "archived"
+        ]
       },
       "TaxMode": {
         "type": "string",
         "description": "Specifies the tax calculation mode for the transaction. If set to \"inclusive,\" the tax is included in the price. If set to \"exclusive,\" the tax is added on top of the price.",
-        "enum": ["inclusive", "exclusive"]
+        "enum": [
+          "inclusive",
+          "exclusive"
+        ]
       },
       "TaxCategory": {
         "type": "string",
         "description": "Categorizes the type of product or service for tax purposes. This helps determine the applicable tax rules based on the nature of the item or service.",
-        "enum": ["saas", "digital-goods-service", "ebooks"]
+        "enum": [
+          "saas",
+          "digital-goods-service",
+          "ebooks"
+        ]
       },
       "CustomFieldType": {
         "type": "string",
         "description": "The type of the field.",
-        "enum": ["text", "checkbox"]
+        "enum": [
+          "text",
+          "checkbox"
+        ]
       },
       "Text": {
         "type": "object",
@@ -2848,7 +2980,11 @@
             ]
           }
         },
-        "required": ["type", "key", "label"]
+        "required": [
+          "type",
+          "key",
+          "label"
+        ]
       },
       "ProductEntity": {
         "type": "object",
@@ -2994,7 +3130,13 @@
             "nullable": true
           }
         },
-        "required": ["total_records", "total_pages", "current_page", "next_page", "prev_page"]
+        "required": [
+          "total_records",
+          "total_pages",
+          "current_page",
+          "next_page",
+          "prev_page"
+        ]
       },
       "ProductListEntity": {
         "type": "object",
@@ -3015,17 +3157,26 @@
             ]
           }
         },
-        "required": ["items", "pagination"]
+        "required": [
+          "items",
+          "pagination"
+        ]
       },
       "ProductCurrency": {
         "type": "string",
         "description": "Three-letter ISO currency code, in uppercase. Must be a supported currency.",
-        "enum": ["EUR", "USD"]
+        "enum": [
+          "EUR",
+          "USD"
+        ]
       },
       "ProductRequestBillingType": {
         "type": "string",
         "description": "Indicates the billing method for the customer. It can either be a `recurring` billing cycle or a `onetime` payment.",
-        "enum": ["recurring", "onetime"]
+        "enum": [
+          "recurring",
+          "onetime"
+        ]
       },
       "ProductRequestBillingPeriod": {
         "type": "string",
@@ -3042,7 +3193,10 @@
       "CustomFieldRequestType": {
         "type": "string",
         "description": "The type of the field.",
-        "enum": ["text", "checkbox"]
+        "enum": [
+          "text",
+          "checkbox"
+        ]
       },
       "TextFieldConfig": {
         "type": "object",
@@ -3109,7 +3263,11 @@
             ]
           }
         },
-        "required": ["type", "key", "label"]
+        "required": [
+          "type",
+          "key",
+          "label"
+        ]
       },
       "CreateProductRequestEntity": {
         "type": "object",
@@ -3188,7 +3346,13 @@
             "default": false
           }
         },
-        "required": ["name", "description", "price", "currency", "billing_type"]
+        "required": [
+          "name",
+          "description",
+          "price",
+          "currency",
+          "billing_type"
+        ]
       },
       "CustomerEntity": {
         "type": "object",
@@ -3244,7 +3408,15 @@
             "example": "2023-01-01T00:00:00Z"
           }
         },
-        "required": ["id", "mode", "object", "email", "country", "created_at", "updated_at"]
+        "required": [
+          "id",
+          "mode",
+          "object",
+          "email",
+          "country",
+          "created_at",
+          "updated_at"
+        ]
       },
       "CustomerListEntity": {
         "type": "object",
@@ -3265,17 +3437,26 @@
             ]
           }
         },
-        "required": ["items", "pagination"]
+        "required": [
+          "items",
+          "pagination"
+        ]
       },
       "OrderStatus": {
         "type": "string",
         "description": "Current status of the order.",
-        "enum": ["pending", "paid"]
+        "enum": [
+          "pending",
+          "paid"
+        ]
       },
       "OrderType": {
         "type": "string",
         "description": "The type of order. This can specify whether it's a regular purchase, subscription, etc.",
-        "enum": ["recurring", "onetime"]
+        "enum": [
+          "recurring",
+          "onetime"
+        ]
       },
       "OrderEntity": {
         "type": "object",
@@ -3423,7 +3604,10 @@
             ]
           }
         },
-        "required": ["items", "pagination"]
+        "required": [
+          "items",
+          "pagination"
+        ]
       },
       "SubscriptionItemEntity": {
         "type": "object",
@@ -3453,12 +3637,18 @@
             "nullable": true
           }
         },
-        "required": ["id", "mode", "object"]
+        "required": [
+          "id",
+          "mode",
+          "object"
+        ]
       },
       "SubscriptionCollectionMethod": {
         "type": "string",
         "description": "The method used for collecting payments for the subscription.",
-        "enum": ["charge_automatically"]
+        "enum": [
+          "charge_automatically"
+        ]
       },
       "SubscriptionStatus": {
         "type": "string",
@@ -3476,7 +3666,10 @@
       "TransactionType": {
         "type": "string",
         "description": "The type of transaction. payment(one time payments) and invoice(subscription)",
-        "enum": ["payment", "invoice"]
+        "enum": [
+          "payment",
+          "invoice"
+        ]
       },
       "TransactionStatus": {
         "type": "string",
@@ -3587,7 +3780,16 @@
             "description": "Creation date of the order as timestamp"
           }
         },
-        "required": ["id", "mode", "object", "amount", "currency", "type", "status", "created_at"]
+        "required": [
+          "id",
+          "mode",
+          "object",
+          "amount",
+          "currency",
+          "type",
+          "status",
+          "created_at"
+        ]
       },
       "SubscriptionEntity": {
         "type": "object",
@@ -3716,14 +3918,21 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["percentage", "fixed"]
+                "enum": [
+                  "percentage",
+                  "fixed"
+                ]
               },
               "amount": {
                 "type": "number"
               },
               "duration": {
                 "type": "string",
-                "enum": ["forever", "once", "repeating"]
+                "enum": [
+                  "forever",
+                  "once",
+                  "repeating"
+                ]
               },
               "durationInMonths": {
                 "type": "number"
@@ -3771,12 +3980,20 @@
             ]
           }
         },
-        "required": ["items", "pagination"]
+        "required": [
+          "items",
+          "pagination"
+        ]
       },
       "LicenseStatus": {
         "type": "string",
         "description": "The current status of the license key.",
-        "enum": ["inactive", "active", "expired", "disabled"]
+        "enum": [
+          "inactive",
+          "active",
+          "expired",
+          "disabled"
+        ]
       },
       "LicenseInstanceEntity": {
         "type": "object",
@@ -3801,7 +4018,10 @@
           "status": {
             "type": "string",
             "description": "The status of the license instance.",
-            "enum": ["active", "deactivated"],
+            "enum": [
+              "active",
+              "deactivated"
+            ],
             "example": "active"
           },
           "created_at": {
@@ -3811,7 +4031,14 @@
             "example": "2023-09-13T00:00:00Z"
           }
         },
-        "required": ["id", "mode", "object", "name", "status", "created_at"]
+        "required": [
+          "id",
+          "mode",
+          "object",
+          "name",
+          "status",
+          "created_at"
+        ]
       },
       "LicenseEntity": {
         "type": "object",
@@ -3905,7 +4132,10 @@
             ]
           }
         },
-        "required": ["items", "pagination"]
+        "required": [
+          "items",
+          "pagination"
+        ]
       },
       "CreateCustomerRequestEntity": {
         "type": "object",
@@ -3929,7 +4159,10 @@
             "additionalProperties": true
           }
         },
-        "required": ["email", "name"]
+        "required": [
+          "email",
+          "name"
+        ]
       },
       "UpdateCustomerRequestEntity": {
         "type": "object",
@@ -3953,7 +4186,9 @@
             "additionalProperties": true
           }
         },
-        "required": ["customer_id"]
+        "required": [
+          "customer_id"
+        ]
       },
       "CreateCustomerPortalLinkRequestEntity": {
         "type": "object",
@@ -3963,7 +4198,9 @@
             "description": "Unique identifier of the customer."
           }
         },
-        "required": ["customer_id"]
+        "required": [
+          "customer_id"
+        ]
       },
       "CustomerLinksEntity": {
         "type": "object",
@@ -3973,7 +4210,9 @@
             "description": "Customer portal link."
           }
         },
-        "required": ["customer_portal_link"]
+        "required": [
+          "customer_portal_link"
+        ]
       },
       "CancelSubscriptionRequestEntity": {
         "type": "object",
@@ -3981,13 +4220,19 @@
           "mode": {
             "type": "string",
             "description": "The mode of cancellation (immediate or scheduled), default can be configured in the store billing settings.",
-            "enum": ["immediate", "scheduled"],
+            "enum": [
+              "immediate",
+              "scheduled"
+            ],
             "example": "immediate"
           },
           "onExecute": {
             "type": "string",
             "description": "The action to execute when canceling (cancel or pause) when mode is scheduled, ignored when mode is immediate or not provided",
-            "enum": ["cancel", "pause"],
+            "enum": [
+              "cancel",
+              "pause"
+            ],
             "example": "cancel"
           }
         }
@@ -4026,7 +4271,11 @@
           "update_behavior": {
             "type": "string",
             "description": "The update behavior for the subscription (defaults to proration)",
-            "enum": ["proration-charge-immediately", "proration-charge", "proration-none"],
+            "enum": [
+              "proration-charge-immediately",
+              "proration-charge",
+              "proration-none"
+            ],
             "default": "proration-charge"
           }
         }
@@ -4042,11 +4291,17 @@
           "update_behavior": {
             "type": "string",
             "description": "The update behavior for the subscription (defaults to proration-charge-immediately)",
-            "enum": ["proration-charge-immediately", "proration-charge", "proration-none"],
+            "enum": [
+              "proration-charge-immediately",
+              "proration-charge",
+              "proration-none"
+            ],
             "default": "proration-charge-immediately"
           }
         },
-        "required": ["product_id"]
+        "required": [
+          "product_id"
+        ]
       },
       "FeatureFileEntity": {
         "type": "object",
@@ -4077,7 +4332,13 @@
             "example": 1024000
           }
         },
-        "required": ["id", "file_name", "url", "type", "size"]
+        "required": [
+          "id",
+          "file_name",
+          "url",
+          "type",
+          "size"
+        ]
       },
       "FileFeatureEntity": {
         "type": "object",
@@ -4090,7 +4351,9 @@
             }
           }
         },
-        "required": ["files"]
+        "required": [
+          "files"
+        ]
       },
       "CustomerCreditsFeatureEntity": {
         "type": "object",
@@ -4107,7 +4370,9 @@
             "nullable": true
           }
         },
-        "required": ["amount"]
+        "required": [
+          "amount"
+        ]
       },
       "ProductFeatureEntity": {
         "type": "object",
@@ -4191,7 +4456,12 @@
           "status": {
             "type": "string",
             "description": "Status of the checkout.",
-            "enum": ["pending", "processing", "completed", "expired"],
+            "enum": [
+              "pending",
+              "processing",
+              "completed",
+              "expired"
+            ],
             "example": "completed"
           },
           "request_id": {
@@ -4310,14 +4580,21 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["percentage", "fixed"]
+                "enum": [
+                  "percentage",
+                  "fixed"
+                ]
               },
               "amount": {
                 "type": "number"
               },
               "duration": {
                 "type": "string",
-                "enum": ["forever", "once", "repeating"]
+                "enum": [
+                  "forever",
+                  "once",
+                  "repeating"
+                ]
               },
               "durationInMonths": {
                 "type": "number"
@@ -4325,7 +4602,13 @@
             }
           }
         },
-        "required": ["id", "mode", "object", "status", "product"]
+        "required": [
+          "id",
+          "mode",
+          "object",
+          "status",
+          "product"
+        ]
       },
       "CustomerRequestEntity": {
         "type": "object",
@@ -4407,7 +4690,9 @@
             "additionalProperties": true
           }
         },
-        "required": ["product_id"]
+        "required": [
+          "product_id"
+        ]
       },
       "ActivateLicenseRequestEntity": {
         "type": "object",
@@ -4421,7 +4706,10 @@
             "description": "A label for the new instance to identify it in Creem."
           }
         },
-        "required": ["key", "instance_name"]
+        "required": [
+          "key",
+          "instance_name"
+        ]
       },
       "DeactivateLicenseRequestEntity": {
         "type": "object",
@@ -4435,7 +4723,10 @@
             "description": "Id of the instance to deactivate."
           }
         },
-        "required": ["key", "instance_id"]
+        "required": [
+          "key",
+          "instance_id"
+        ]
       },
       "ValidateLicenseRequestEntity": {
         "type": "object",
@@ -4449,7 +4740,10 @@
             "description": "Id of the instance to validate."
           }
         },
-        "required": ["key", "instance_id"]
+        "required": [
+          "key",
+          "instance_id"
+        ]
       },
       "DiscountEntity": {
         "type": "object",
@@ -4469,7 +4763,13 @@
           "status": {
             "type": "string",
             "description": "The status of the discount (e.g., active, inactive).",
-            "enum": ["deleted", "active", "draft", "expired", "scheduled"],
+            "enum": [
+              "deleted",
+              "active",
+              "draft",
+              "expired",
+              "scheduled"
+            ],
             "example": "active"
           },
           "name": {
@@ -4485,7 +4785,10 @@
           "type": {
             "type": "string",
             "description": "The type of the discount, either \"percentage\" or \"fixed\".",
-            "enum": ["percentage", "fixed"],
+            "enum": [
+              "percentage",
+              "fixed"
+            ],
             "example": "percentage"
           },
           "amount": {
@@ -4517,7 +4820,11 @@
           "duration": {
             "type": "string",
             "description": "The duration type for the discount.",
-            "enum": ["forever", "once", "repeating"],
+            "enum": [
+              "forever",
+              "once",
+              "repeating"
+            ],
             "example": "repeating"
           },
           "duration_in_months": {
@@ -4527,7 +4834,10 @@
           },
           "applies_to_products": {
             "description": "The list of product IDs to which this discount applies.",
-            "example": ["prod_123", "prod_456"],
+            "example": [
+              "prod_123",
+              "prod_456"
+            ],
             "type": "array",
             "items": {
               "type": "string"
@@ -4539,7 +4849,15 @@
             "example": 15
           }
         },
-        "required": ["id", "mode", "object", "status", "name", "code", "type"]
+        "required": [
+          "id",
+          "mode",
+          "object",
+          "status",
+          "name",
+          "code",
+          "type"
+        ]
       },
       "DiscountListEntity": {
         "type": "object",
@@ -4560,17 +4878,27 @@
             ]
           }
         },
-        "required": ["items", "pagination"]
+        "required": [
+          "items",
+          "pagination"
+        ]
       },
       "DiscountType": {
         "type": "string",
         "description": "The type of the discount, either \"percentage\" or \"fixed\".",
-        "enum": ["percentage", "fixed"]
+        "enum": [
+          "percentage",
+          "fixed"
+        ]
       },
       "CouponDurationType": {
         "type": "string",
         "description": "The duration type for the discount.",
-        "enum": ["forever", "once", "repeating"]
+        "enum": [
+          "forever",
+          "once",
+          "repeating"
+        ]
       },
       "CreateDiscountRequestEntity": {
         "type": "object",
@@ -4625,14 +4953,22 @@
           },
           "applies_to_products": {
             "description": "The list of product IDs to which this discount applies.",
-            "example": ["prod_123", "prod_456"],
+            "example": [
+              "prod_123",
+              "prod_456"
+            ],
             "type": "array",
             "items": {
               "type": "string"
             }
           }
         },
-        "required": ["name", "type", "duration", "applies_to_products"]
+        "required": [
+          "name",
+          "type",
+          "duration",
+          "applies_to_products"
+        ]
       },
       "TransactionListEntity": {
         "type": "object",
@@ -4653,7 +4989,10 @@
             ]
           }
         },
-        "required": ["items", "pagination"]
+        "required": [
+          "items",
+          "pagination"
+        ]
       },
       "StatsMetricTotalsEntity": {
         "type": "object",
@@ -4735,7 +5074,11 @@
             "example": 122173
           }
         },
-        "required": ["timestamp", "grossRevenue", "netRevenue"]
+        "required": [
+          "timestamp",
+          "grossRevenue",
+          "netRevenue"
+        ]
       },
       "StatsSummaryEntity": {
         "type": "object",
@@ -4798,7 +5141,9 @@
             }
           }
         },
-        "required": ["totals"]
+        "required": [
+          "totals"
+        ]
       },
       "ScreenPromptRequest": {
         "type": "object",
@@ -4812,7 +5157,9 @@
             "description": "An optional identifier to associate this request with."
           }
         },
-        "required": ["prompt"]
+        "required": [
+          "prompt"
+        ]
       },
       "UsageEntity": {
         "type": "object",
@@ -4822,7 +5169,9 @@
             "description": "Number of units consumed by this call."
           }
         },
-        "required": ["units"]
+        "required": [
+          "units"
+        ]
       },
       "ScreenPromptResponse": {
         "type": "object",
@@ -4847,7 +5196,11 @@
           "decision": {
             "type": "string",
             "description": "The moderation decision.",
-            "enum": ["allow", "deny", "flag"]
+            "enum": [
+              "allow",
+              "deny",
+              "flag"
+            ]
           },
           "usage": {
             "description": "Usage information for this call.",
@@ -4858,7 +5211,13 @@
             ]
           }
         },
-        "required": ["id", "object", "prompt", "decision", "usage"]
+        "required": [
+          "id",
+          "object",
+          "prompt",
+          "decision",
+          "usage"
+        ]
       },
       "CreateAccountDto": {
         "type": "object",
@@ -4886,7 +5245,9 @@
             "example": "300"
           }
         },
-        "required": ["customer_id"]
+        "required": [
+          "customer_id"
+        ]
       },
       "AccountResponseDto": {
         "type": "object",
@@ -4918,7 +5279,11 @@
           "status": {
             "type": "string",
             "description": "Account status",
-            "enum": ["active", "frozen", "closed"]
+            "enum": [
+              "active",
+              "frozen",
+              "closed"
+            ]
           },
           "created_at": {
             "type": "string",
@@ -4960,7 +5325,11 @@
             "description": "Whether more items exist beyond this page"
           }
         },
-        "required": ["object", "data", "has_more"]
+        "required": [
+          "object",
+          "data",
+          "has_more"
+        ]
       },
       "BalanceResponseDto": {
         "type": "object",
@@ -4979,7 +5348,9 @@
             "description": "Point-in-time the balance was computed at (present for at-time queries)"
           }
         },
-        "required": ["balance"]
+        "required": [
+          "balance"
+        ]
       },
       "EntryResponseDto": {
         "type": "object",
@@ -5002,7 +5373,10 @@
           "side": {
             "type": "string",
             "description": "Debit or credit side",
-            "enum": ["debit", "credit"]
+            "enum": [
+              "debit",
+              "credit"
+            ]
           },
           "amount": {
             "type": "string",
@@ -5014,7 +5388,14 @@
             "description": "Creation timestamp"
           }
         },
-        "required": ["id", "transaction_id", "account_id", "side", "amount", "created_at"]
+        "required": [
+          "id",
+          "transaction_id",
+          "account_id",
+          "side",
+          "amount",
+          "created_at"
+        ]
       },
       "EntryListResponseDto": {
         "type": "object",
@@ -5036,7 +5417,11 @@
             "description": "Whether more items exist beyond this page"
           }
         },
-        "required": ["object", "data", "has_more"]
+        "required": [
+          "object",
+          "data",
+          "has_more"
+        ]
       },
       "CustomerCreditsErrorDetailDto": {
         "type": "object",
@@ -5075,7 +5460,12 @@
             "example": "req_abc123def456"
           }
         },
-        "required": ["type", "code", "message", "request_id"]
+        "required": [
+          "type",
+          "code",
+          "message",
+          "request_id"
+        ]
       },
       "CustomerCreditsErrorResponseDto": {
         "type": "object",
@@ -5089,7 +5479,9 @@
             ]
           }
         },
-        "required": ["error"]
+        "required": [
+          "error"
+        ]
       },
       "CreditDebitRequestDto": {
         "type": "object",
@@ -5110,7 +5502,11 @@
             "example": "idem_abc123"
           }
         },
-        "required": ["amount", "reference", "idempotency_key"]
+        "required": [
+          "amount",
+          "reference",
+          "idempotency_key"
+        ]
       },
       "TransactionResponseDto": {
         "type": "object",
@@ -5150,7 +5546,14 @@
             "description": "Creation timestamp"
           }
         },
-        "required": ["id", "store_id", "reference", "idempotency_key", "entries", "created_at"]
+        "required": [
+          "id",
+          "store_id",
+          "reference",
+          "idempotency_key",
+          "entries",
+          "created_at"
+        ]
       },
       "ReverseTransactionRequestDto": {
         "type": "object",
@@ -5161,7 +5564,9 @@
             "example": "cct_abc123"
           }
         },
-        "required": ["transaction_id"]
+        "required": [
+          "transaction_id"
+        ]
       },
       "WebhookSubscriptionEntity": {
         "type": "object",
@@ -5284,14 +5689,21 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["percentage", "fixed"]
+                "enum": [
+                  "percentage",
+                  "fixed"
+                ]
               },
               "amount": {
                 "type": "number"
               },
               "duration": {
                 "type": "string",
-                "enum": ["forever", "once", "repeating"]
+                "enum": [
+                  "forever",
+                  "once",
+                  "repeating"
+                ]
               },
               "durationInMonths": {
                 "type": "number"
@@ -5331,7 +5743,9 @@
           "eventType": {
             "type": "string",
             "description": "The event name.",
-            "enum": ["checkout.completed"]
+            "enum": [
+              "checkout.completed"
+            ]
           },
           "created_at": {
             "type": "number",
@@ -5346,18 +5760,33 @@
             ]
           }
         },
-        "required": ["id", "eventType", "created_at", "object"],
+        "required": [
+          "id",
+          "eventType",
+          "created_at",
+          "object"
+        ],
         "x-speakeasy-include": true
       },
       "RefundStatus": {
         "type": "string",
         "description": "Status of the refund.",
-        "enum": ["pending", "succeeded", "canceled", "failed"]
+        "enum": [
+          "pending",
+          "succeeded",
+          "canceled",
+          "failed"
+        ]
       },
       "RefundReason": {
         "type": "string",
         "description": "Reason for the refund.",
-        "enum": ["duplicate", "fraudulent", "requested_by_customer", "other"]
+        "enum": [
+          "duplicate",
+          "fraudulent",
+          "requested_by_customer",
+          "other"
+        ]
       },
       "RefundEntity": {
         "type": "object",
@@ -5468,7 +5897,9 @@
           "eventType": {
             "type": "string",
             "description": "The event name.",
-            "enum": ["refund.created"]
+            "enum": [
+              "refund.created"
+            ]
           },
           "created_at": {
             "type": "number",
@@ -5483,7 +5914,12 @@
             ]
           }
         },
-        "required": ["id", "eventType", "created_at", "object"],
+        "required": [
+          "id",
+          "eventType",
+          "created_at",
+          "object"
+        ],
         "x-speakeasy-include": true
       },
       "DisputeEntity": {
@@ -5567,7 +6003,15 @@
             "description": "Creation date of the dispute as timestamp"
           }
         },
-        "required": ["id", "mode", "object", "amount", "currency", "transaction", "created_at"]
+        "required": [
+          "id",
+          "mode",
+          "object",
+          "amount",
+          "currency",
+          "transaction",
+          "created_at"
+        ]
       },
       "WebhookDisputeCreatedEventEntity": {
         "type": "object",
@@ -5579,7 +6023,9 @@
           "eventType": {
             "type": "string",
             "description": "The event name.",
-            "enum": ["dispute.created"]
+            "enum": [
+              "dispute.created"
+            ]
           },
           "created_at": {
             "type": "number",
@@ -5594,7 +6040,12 @@
             ]
           }
         },
-        "required": ["id", "eventType", "created_at", "object"],
+        "required": [
+          "id",
+          "eventType",
+          "created_at",
+          "object"
+        ],
         "x-speakeasy-include": true
       },
       "WebhookSubscriptionActiveEventEntity": {
@@ -5607,7 +6058,9 @@
           "eventType": {
             "type": "string",
             "description": "The event name.",
-            "enum": ["subscription.active"]
+            "enum": [
+              "subscription.active"
+            ]
           },
           "created_at": {
             "type": "number",
@@ -5622,7 +6075,12 @@
             ]
           }
         },
-        "required": ["id", "eventType", "created_at", "object"],
+        "required": [
+          "id",
+          "eventType",
+          "created_at",
+          "object"
+        ],
         "x-speakeasy-include": true
       },
       "WebhookSubscriptionTrialingEventEntity": {
@@ -5635,7 +6093,9 @@
           "eventType": {
             "type": "string",
             "description": "The event name.",
-            "enum": ["subscription.trialing"]
+            "enum": [
+              "subscription.trialing"
+            ]
           },
           "created_at": {
             "type": "number",
@@ -5650,7 +6110,12 @@
             ]
           }
         },
-        "required": ["id", "eventType", "created_at", "object"],
+        "required": [
+          "id",
+          "eventType",
+          "created_at",
+          "object"
+        ],
         "x-speakeasy-include": true
       },
       "WebhookSubscriptionCanceledEventEntity": {
@@ -5663,7 +6128,9 @@
           "eventType": {
             "type": "string",
             "description": "The event name.",
-            "enum": ["subscription.canceled"]
+            "enum": [
+              "subscription.canceled"
+            ]
           },
           "created_at": {
             "type": "number",
@@ -5678,7 +6145,12 @@
             ]
           }
         },
-        "required": ["id", "eventType", "created_at", "object"],
+        "required": [
+          "id",
+          "eventType",
+          "created_at",
+          "object"
+        ],
         "x-speakeasy-include": true
       },
       "WebhookSubscriptionScheduledCancelEventEntity": {
@@ -5691,7 +6163,9 @@
           "eventType": {
             "type": "string",
             "description": "The event name.",
-            "enum": ["subscription.scheduled_cancel"]
+            "enum": [
+              "subscription.scheduled_cancel"
+            ]
           },
           "created_at": {
             "type": "number",
@@ -5706,7 +6180,12 @@
             ]
           }
         },
-        "required": ["id", "eventType", "created_at", "object"],
+        "required": [
+          "id",
+          "eventType",
+          "created_at",
+          "object"
+        ],
         "x-speakeasy-include": true
       },
       "WebhookSubscriptionPaidEventEntity": {
@@ -5719,7 +6198,9 @@
           "eventType": {
             "type": "string",
             "description": "The event name.",
-            "enum": ["subscription.paid"]
+            "enum": [
+              "subscription.paid"
+            ]
           },
           "created_at": {
             "type": "number",
@@ -5734,7 +6215,12 @@
             ]
           }
         },
-        "required": ["id", "eventType", "created_at", "object"],
+        "required": [
+          "id",
+          "eventType",
+          "created_at",
+          "object"
+        ],
         "x-speakeasy-include": true
       },
       "WebhookSubscriptionExpiredEventEntity": {
@@ -5747,7 +6233,9 @@
           "eventType": {
             "type": "string",
             "description": "The event name.",
-            "enum": ["subscription.expired"]
+            "enum": [
+              "subscription.expired"
+            ]
           },
           "created_at": {
             "type": "number",
@@ -5762,7 +6250,12 @@
             ]
           }
         },
-        "required": ["id", "eventType", "created_at", "object"],
+        "required": [
+          "id",
+          "eventType",
+          "created_at",
+          "object"
+        ],
         "x-speakeasy-include": true
       },
       "WebhookSubscriptionUnpaidEventEntity": {
@@ -5775,7 +6268,9 @@
           "eventType": {
             "type": "string",
             "description": "The event name.",
-            "enum": ["subscription.unpaid"]
+            "enum": [
+              "subscription.unpaid"
+            ]
           },
           "created_at": {
             "type": "number",
@@ -5790,7 +6285,12 @@
             ]
           }
         },
-        "required": ["id", "eventType", "created_at", "object"],
+        "required": [
+          "id",
+          "eventType",
+          "created_at",
+          "object"
+        ],
         "x-speakeasy-include": true
       },
       "WebhookSubscriptionUpdateEventEntity": {
@@ -5803,7 +6303,9 @@
           "eventType": {
             "type": "string",
             "description": "The event name.",
-            "enum": ["subscription.update"]
+            "enum": [
+              "subscription.update"
+            ]
           },
           "created_at": {
             "type": "number",
@@ -5818,7 +6320,12 @@
             ]
           }
         },
-        "required": ["id", "eventType", "created_at", "object"],
+        "required": [
+          "id",
+          "eventType",
+          "created_at",
+          "object"
+        ],
         "x-speakeasy-include": true
       },
       "WebhookSubscriptionPastDueEventEntity": {
@@ -5831,7 +6338,9 @@
           "eventType": {
             "type": "string",
             "description": "The event name.",
-            "enum": ["subscription.past_due"]
+            "enum": [
+              "subscription.past_due"
+            ]
           },
           "created_at": {
             "type": "number",
@@ -5846,7 +6355,12 @@
             ]
           }
         },
-        "required": ["id", "eventType", "created_at", "object"],
+        "required": [
+          "id",
+          "eventType",
+          "created_at",
+          "object"
+        ],
         "x-speakeasy-include": true
       },
       "WebhookSubscriptionPausedEventEntity": {
@@ -5859,7 +6373,9 @@
           "eventType": {
             "type": "string",
             "description": "The event name.",
-            "enum": ["subscription.paused"]
+            "enum": [
+              "subscription.paused"
+            ]
           },
           "created_at": {
             "type": "number",
@@ -5874,7 +6390,12 @@
             ]
           }
         },
-        "required": ["id", "eventType", "created_at", "object"],
+        "required": [
+          "id",
+          "eventType",
+          "created_at",
+          "object"
+        ],
         "x-speakeasy-include": true
       },
       "WebhookEventEntity": {
