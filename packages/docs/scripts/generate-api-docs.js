@@ -44,6 +44,7 @@ const FILENAME_OVERRIDES = {
   resumeSubscription: "resume-subscription",
   createCheckout: "create-checkout",
   createProduct: "create-product",
+  retrieveAffiliate: "get-affiliate",
 };
 
 // Fallback descriptions when not provided in OpenAPI spec

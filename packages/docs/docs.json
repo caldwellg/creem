@@ -292,6 +292,15 @@
             "pages": ["api-reference/endpoint/get-stats-summary"]
           },
           {
+            "group": "Affiliate",
+            "icon": "handshake",
+            "pages": [
+              "api-reference/endpoint/list-affiliates",
+              "api-reference/endpoint/get-affiliate",
+              "api-reference/endpoint/list-affiliate-commissions"
+            ]
+          },
+          {
             "group": "Customer Credits",
             "icon": "coins",
             "pages": [

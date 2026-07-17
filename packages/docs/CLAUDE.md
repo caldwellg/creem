@@ -231,6 +231,7 @@ API keys can have granular scopes following `resource:action` pattern:
 | licenses | licenses:read | licenses:write |
 | discounts | discounts:read | discounts:write |
 | stats | stats:read | — |
+| affiliates | affiliates:read | — |
 
 Special scope: `*:*` grants full access to all resources.
 
@@ -246,6 +247,7 @@ Special scope: `*:*` grants full access to all resources.
 | **License** | Validate, Activate, Deactivate |
 | **Discount** | Create, Retrieve, Delete |
 | **Stats** | Revenue, Subscriptions, Customers, MRR, Churn, LTV |
+| **Affiliate** | List affiliates, Retrieve affiliate, List commissions |
 
 ### Core Data Entities
 
