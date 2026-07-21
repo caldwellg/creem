@@ -56,11 +56,11 @@ Keep this tab open, you will come back to it in step 3.
 
 </Accordion>
 
-<Frame>
+<Frame caption="Step 1 in Rekomi: copy your workspace's webhook URL.">
   <img
     style={{ borderRadius: "0.5rem" }}
-    src="https://rekomi-uploads-prod.nyc3.digitaloceanspaces.com/docs/screenshots/brands/gateways/connect-creem.png?v=1"
-    alt="The Connect Creem page in Rekomi showing the webhook URL, signing secret, and API key fields"
+    src="https://rekomi-uploads-prod.nyc3.digitaloceanspaces.com/docs/screenshots/creem-integration/creem-step1-webhook-url.png?v=1"
+    alt="Rekomi showing the per-workspace Creem webhook URL to copy, with a reminder to select all events"
   />
 </Frame>
 
@@ -76,8 +76,17 @@ In your Creem dashboard, go to **Developers > Webhooks** and click **Add Webhook
 
 </Accordion>
 
+<Frame caption="Step 2 in Creem: use Select All so the counter reads 13 of 13 events selected.">
+  <img
+    style={{ borderRadius: "0.5rem" }}
+    src="https://rekomi-uploads-prod.nyc3.digitaloceanspaces.com/docs/screenshots/creem-integration/creem-step2-webhook-events.png?v=1"
+    alt="Creem's Create Webhook form with the name and URL fields and all 13 event types selected"
+  />
+</Frame>
+
 <Warning>
-  Please select every event type. Rekomi quietly ignores the events it does not need, but a partial
+  Please select every event type. The quickest way is the **Select All** button, which should leave
+  the counter reading 13 of 13. Rekomi quietly ignores the events it does not need, but a partial
   selection is accepted without complaint and then drops sales, with no error shown anywhere. If
   tracking ever goes quiet, this is the first thing to check.
 </Warning>
@@ -93,6 +102,14 @@ so before anything is saved.
 
 </Accordion>
 
+<Frame caption="Step 3 in Creem: tick READ on Products. Nothing else is needed.">
+  <img
+    style={{ borderRadius: "0.5rem" }}
+    src="https://rekomi-uploads-prod.nyc3.digitaloceanspaces.com/docs/screenshots/creem-integration/creem-step3-api-key-scopes.png?v=1"
+    alt="Creem's Create API Key dialog showing the resource permission matrix with read and write columns"
+  />
+</Frame>
+
 <Accordion title="Paste both values into Rekomi">
 
 Back on the Rekomi setup page:
@@ -105,6 +122,14 @@ Rekomi checks the key against Creem before accepting it, so you find out straigh
 is off.
 
 </Accordion>
+
+<Frame caption="Step 3 in Rekomi: paste the signing secret and API key, then connect.">
+  <img
+    style={{ borderRadius: "0.5rem" }}
+    src="https://rekomi-uploads-prod.nyc3.digitaloceanspaces.com/docs/screenshots/creem-integration/creem-step3-connect-form.png?v=1"
+    alt="The Rekomi connect form with fields for the Creem webhook signing secret and API key"
+  />
+</Frame>
 
 ### 4. Add the Rekomi script to your site
 
