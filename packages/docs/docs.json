@@ -145,7 +145,7 @@
             "pages": [
               {
                 "group": "Affiliate Platforms",
-                "pages": ["integrations/affiliates", "integrations/rekomi"]
+                "pages": ["integrations/rekomi"]
               },
               {
                 "group": "Purchase Parity Platforms",
