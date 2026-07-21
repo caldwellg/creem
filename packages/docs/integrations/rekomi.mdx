@@ -42,7 +42,7 @@ Five steps, about 10 minutes.
 
 <Accordion title="1.1 Get your webhook URL.">
 
-In Rekomi, go to **Setup > Payments > Creem**. The page shows a webhook URL unique to your workspace, plus fields for the signing secret and API key.
+In Rekomi, open **Setup > Connect payment processor** and choose Creem. The page shows a webhook URL unique to your workspace, plus fields for the signing secret and API key.
 
 Keep this tab open. You will paste values back into it in step 3.
 
@@ -157,7 +157,7 @@ If you create checkout sessions server side, read the referral on the frontend w
 | Refund               | Commission clawed back proportionally, capped at the original commission |
 | Chargeback           | Disputed amount clawed back, de-duplicated against the matching refund   |
 
-Commissions calculate on the pre-tax sale amount. As Merchant of Record, Creem collects tax on top, and your affiliates earn on the sale rather than on the tax.
+Commissions calculate on the pre-tax sale amount in both tax modes. As Merchant of Record, Creem collects the tax, and affiliates earn on the sale rather than on the tax. With `tax_mode: exclusive` the tax sits on top of your price; with `tax_mode: inclusive` your price already contains it. Rekomi derives the net from the amount paid less the tax line, so an inclusive-priced product does not pay commission on its own VAT.
 
 Every event is de-duplicated by the underlying order, transaction, refund, and dispute ID, so redeliveries and manual resends never double count.
 
@@ -165,7 +165,8 @@ Every event is de-duplicated by the underlying order, transaction, refund, and d
 
 - **Verify the event selection first.** A webhook with a partial event selection is the most common failure, and it fails quietly. Check it before you check anything else.
 - **Test with a real purchase.** Click an affiliate link, buy, confirm the conversion appears in Rekomi within a minute, then refund it and confirm the clawback.
-- **Watch the last-event timestamp.** Creem has no webhook management API, so Rekomi's health check validates the API key but cannot see whether the endpoint still exists. A stale timestamp means the endpoint was removed or edited.
+- **Trust the event state, not the key check.** Creem has no webhook management API, so Rekomi can validate the API key but cannot see whether your endpoint still exists. The Rekomi setup page tracks this for you: it stays amber until a signed delivery actually lands, and warns again if events go quiet.
+- **Re-created the webhook? Update the signing secret.** Deleting and re-creating the endpoint in Creem mints a new secret, and until you paste it in, deliveries fail signature checks while the API key still checks out.
 - **Resend from Creem after an outage.** Creem's retry ladder runs about an hour. Past that, resend the delivery from the Creem dashboard; Rekomi records resends idempotently.
 
 <Card title="Full setup guide" icon="book-open" href="https://rekomi.com/docs/brands/install/creem">
