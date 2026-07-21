@@ -57,10 +57,6 @@ actions:
     update:
       x-speakeasy-group: subscriptions
       x-speakeasy-name-override: resume
-  - target: $["paths"]["/v1/products"]["get"]
-    update:
-      x-speakeasy-group: products
-      x-speakeasy-name-override: get
   - target: $["paths"]["/v1/products"]["post"]
     update:
       x-speakeasy-group: products

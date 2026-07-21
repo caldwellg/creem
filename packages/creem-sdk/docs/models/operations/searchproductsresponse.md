@@ -18,7 +18,7 @@ let value: SearchProductsResponse = {
         features: [
           {
             id: "feat_abc123",
-            type: "licenseKey",
+            type: "customerCredits",
             description: "Access to premium course materials.",
           },
         ],
@@ -27,7 +27,7 @@ let value: SearchProductsResponse = {
         billingType: "onetime",
         billingPeriod: "once",
         status: "archived",
-        taxMode: "exclusive",
+        taxMode: "inclusive",
         taxCategory: "digital-goods-service",
         productUrl: "https://creem.io/product/prod_123123123123",
         defaultSuccessUrl: "https://example.com/?status=successful",

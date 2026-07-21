@@ -29,7 +29,7 @@ const value: components.CheckoutEntity = {
     features: [
       {
         id: "feat_abc123",
-        type: "licenseKey",
+        type: "customerCredits",
         description: "Access to premium course materials.",
       },
     ],

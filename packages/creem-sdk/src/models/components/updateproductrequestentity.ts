@@ -28,9 +28,6 @@ import {
   TaxMode$outboundSchema,
 } from "./taxmode.js";
 
-/**
- * Product update payload. Only supplied fields change. Changing a price field mints a new default price; existing subscriptions keep the price they were purchased under.
- */
 export type UpdateProductRequestEntity = {
   /**
    * Name of the product
@@ -45,7 +42,7 @@ export type UpdateProductRequestEntity = {
    */
   imageUrl?: string | undefined;
   /**
-   * The URL to which the user will be redirected after successfull payment.
+   * Redirect URL after successful payment.
    */
   defaultSuccessUrl?: string | undefined;
   /**
@@ -53,15 +50,15 @@ export type UpdateProductRequestEntity = {
    */
   price?: number | undefined;
   /**
-   * Three-letter ISO currency code, in uppercase. Must be a supported currency.
+   * Three-letter uppercase ISO 4217 currency code. Must be one of Creem's supported currencies.
    */
   currency?: ProductCurrency | undefined;
   /**
-   * Indicates the billing method for the customer. It can either be a `recurring` billing cycle or a `onetime` payment.
+   * Billing method for the product: `recurring` subscription or `onetime` payment.
    */
   billingType?: ProductRequestBillingType | undefined;
   /**
-   * Billing period, required if billing_type is recurring
+   * Billing interval. Required when `billing_type` is `recurring`.
    */
   billingPeriod?: ProductRequestBillingPeriod | undefined;
   /**
@@ -69,11 +66,11 @@ export type UpdateProductRequestEntity = {
    */
   taxMode?: TaxMode | undefined;
   /**
-   * Enable pay-what-you-want pricing: the customer chooses the amount at checkout. The `price` field acts as the minimum the customer must pay. Only supported for one-time payment products.
+   * Enable pay-what-you-want pricing (one-time only).
    */
   payWhatYouWant?: boolean | undefined;
   /**
-   * Suggested amount in cents, pre-filled at checkout when pay_what_you_want is enabled. Must be greater than or equal to `price` (the minimum). Ignored when pay_what_you_want is disabled.
+   * Suggested amount in cents when pay_what_you_want is enabled.
    */
   suggestedPrice?: number | undefined;
 };

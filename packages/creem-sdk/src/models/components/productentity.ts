@@ -96,7 +96,7 @@ export type ProductEntity = {
    */
   billingPeriod: ProductBillingPeriod;
   /**
-   * Status of the product
+   * Lifecycle status of the product: `active` or `archived`.
    */
   status: ProductStatus;
   /**

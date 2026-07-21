@@ -57,15 +57,15 @@ export type CreateProductRequestEntity = {
    */
   price: number;
   /**
-   * Three-letter ISO currency code, in uppercase. Must be a supported currency.
+   * Three-letter uppercase ISO 4217 currency code. Must be one of Creem's supported currencies.
    */
   currency: ProductCurrency;
   /**
-   * Indicates the billing method for the customer. It can either be a `recurring` billing cycle or a `onetime` payment.
+   * Billing method for the product: `recurring` subscription or `onetime` payment.
    */
   billingType: ProductRequestBillingType;
   /**
-   * Billing period, required if billing_type is recurring
+   * Billing interval. Required when `billing_type` is `recurring`.
    */
   billingPeriod?: ProductRequestBillingPeriod | undefined;
   /**
