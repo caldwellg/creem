@@ -144,6 +144,10 @@
             "icon": "link",
             "pages": [
               {
+                "group": "Affiliate Platforms",
+                "pages": ["integrations/affiliates", "integrations/rekomi"]
+              },
+              {
                 "group": "Purchase Parity Platforms",
                 "pages": ["integrations/evendeals"]
               },
