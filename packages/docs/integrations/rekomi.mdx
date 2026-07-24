@@ -59,7 +59,7 @@ Keep this tab open, you will come back to it in step 3.
 <Frame caption="Step 1 in Rekomi: copy your workspace's webhook URL.">
   <img
     style={{ borderRadius: "0.5rem", maxWidth: "640px" }}
-    src="https://rekomi-uploads-prod.nyc3.digitaloceanspaces.com/docs/screenshots/creem-integration/creem-step1-webhook-url.png?v=1"
+    src="/images/rekomi/webhook-url.png"
     alt="Rekomi showing the per-workspace Creem webhook URL to copy, with a reminder to select all events"
   />
 </Frame>
@@ -79,7 +79,7 @@ In your Creem dashboard, go to **Developers > Webhooks** and click **Add Webhook
 <Frame caption="Step 2 in Creem: use Select All so the counter reads 13 of 13 events selected.">
   <img
     style={{ borderRadius: "0.5rem" }}
-    src="https://rekomi-uploads-prod.nyc3.digitaloceanspaces.com/docs/screenshots/creem-integration/creem-step2-webhook-events.png?v=1"
+    src="/images/rekomi/webhook-events.png"
     alt="Creem's Create Webhook form with the name and URL fields and all 13 event types selected"
   />
 </Frame>
@@ -105,7 +105,7 @@ so before anything is saved.
 <Frame caption="Step 3 in Creem: tick READ on Products. Nothing else is needed.">
   <img
     style={{ borderRadius: "0.5rem" }}
-    src="https://rekomi-uploads-prod.nyc3.digitaloceanspaces.com/docs/screenshots/creem-integration/creem-step3-api-key-scopes.png?v=1"
+    src="/images/rekomi/api-key-scopes.png"
     alt="Creem's Create API Key dialog showing the resource permission matrix with read and write columns"
   />
 </Frame>
@@ -126,7 +126,7 @@ is off.
 <Frame caption="Step 3 in Rekomi: paste the signing secret and API key, then connect.">
   <img
     style={{ borderRadius: "0.5rem", maxWidth: "640px" }}
-    src="https://rekomi-uploads-prod.nyc3.digitaloceanspaces.com/docs/screenshots/creem-integration/creem-step3-connect-form.png?v=1"
+    src="/images/rekomi/connect-form.png"
     alt="The Rekomi connect form with fields for the Creem webhook signing secret and API key"
   />
 </Frame>
@@ -209,7 +209,7 @@ Everything is de-duplicated by the underlying order, transaction, refund, and di
 - **Try a real purchase.** Click an affiliate link, buy something, confirm the conversion shows up in Rekomi within a minute, then refund it and watch the commission come back off.
 - **Watch the event state, not just the key check.** Creem has no webhook management API, so Rekomi can confirm your API key works but cannot see whether your endpoint still exists. The setup page handles this for you: it stays amber until a real delivery lands, and says so again if events go quiet.
 - **Re-created the webhook? Update the signing secret.** Deleting and re-creating the endpoint in Creem gives you a new secret. Until you paste it in, deliveries fail their signature check even though the API key still looks fine.
-- **After an outage, resend from Creem.** Creem retries for about an hour. Past that, resend the delivery from your Creem dashboard, and Rekomi will record it without duplicating anything.
+- **After an outage, resend from Creem.** Creem retries with increasing delays for several hours. Past that, resend the delivery from your Creem dashboard, and Rekomi will record it without duplicating anything.
 
 <Card title="Full setup guide" icon="book-open" href="https://rekomi.com/docs/brands/install/creem">
   Troubleshooting, security details, and the complete Creem reference in Rekomi's own docs.
